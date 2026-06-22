@@ -298,10 +298,10 @@ export default function Home() {
   );
 
   return (
-    <div className="bg-[#f8f9fa] text-gray-900 overflow-hidden min-h-screen">
-      {/* Hero Section — full viewport, konten bawah muncul saat scroll */}
-      <section className="section-full-width relative overflow-hidden flex items-center h-[calc(100dvh-5rem)] md:h-[calc(100dvh-6rem)] py-4 sm:py-6">
-        <div className="container mx-auto px-4 md:px-12 h-full grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 md:gap-12 items-center relative z-10">
+    <div className="bg-[#f8f9fa] text-gray-900 overflow-x-hidden min-h-screen">
+      {/* Hero — min-h + svh (bukan dvh) agar tinggi stabil saat scroll mobile */}
+      <section className="section-full-width relative flex items-center min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-6rem)] py-4 sm:py-6">
+        <div className="container mx-auto px-4 md:px-12 w-full grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 md:gap-12 items-center relative z-10">
           {/* Text */}
           <div className="flex flex-col items-center text-center md:items-start md:text-left justify-center">
             <div className="inline-flex items-center bg-gray-950 text-white px-3.5 py-1.5 rounded-lg border border-gray-800 shadow-md mb-4 sm:mb-5 gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-widest select-none">
@@ -366,7 +366,7 @@ export default function Home() {
           </div>
 
           {/* Hero Image */}
-          <div className="relative w-full flex justify-center md:justify-end items-center h-[min(34vh,240px)] sm:h-[min(38vh,300px)] md:h-auto md:min-h-[420px] lg:min-h-[460px]">
+          <div className="relative w-full flex justify-center md:justify-end items-center h-[200px] sm:h-[240px] md:h-auto md:min-h-[420px] lg:min-h-[460px]">
             <div className="relative w-full max-w-[500px] lg:max-w-[540px] h-full md:aspect-[4/3] md:h-auto group">
               {/* Artisanal dotted border offset */}
               <div className="absolute inset-0 border-2 border-dashed border-red-600/60 rounded-3xl translate-x-4 translate-y-4 transition-transform duration-500 group-hover:translate-x-2 group-hover:translate-y-2" />
