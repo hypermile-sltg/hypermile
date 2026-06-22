@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       }
 
       const newUsage = currentUsage + 1
-      const updates: Record<string, unknown> = {
+      const updates: { currentUsage: number; active?: boolean } = {
         currentUsage: newUsage,
       }
 

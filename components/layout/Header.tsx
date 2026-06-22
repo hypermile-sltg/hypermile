@@ -15,7 +15,7 @@ import { signOutNextAuthFirebase } from '@/lib/actions/auth/sign-out-next-auth-f
 
 export default function Header() {
   const session = useSession()
-  const pathname = usePathname()
+  const pathname = usePathname() ?? ''
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
