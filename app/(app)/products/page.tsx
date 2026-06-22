@@ -4,12 +4,13 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
 import { idrFormatter } from '@/lib/utils'
+import { cartSubtotal, formatCartItemLines, type CartAddon } from '@/lib/cart'
 import { useEffect, useState } from 'react'
 import { db } from '@/lib/firebase'
 import { collection, onSnapshot } from 'firebase/firestore'
 import useCartStore from '@/store/cart-store'
+import AddonPickerDialog, { type AddonOption } from '@/components/cart/AddonPickerDialog'
 import { ShoppingCart, Plus, Minus } from 'lucide-react'
-import { toast } from 'sonner'
 
 interface Product {
   id: string
@@ -22,13 +23,15 @@ interface Product {
 
 export default function Page() {
   const [products, setProducts] = useState<Product[]>([])
+  const [addons, setAddons] = useState<AddonOption[]>([])
   const [loading, setLoading] = useState(true)
+  const [pickerProduct, setPickerProduct] = useState<Product | null>(null)
   const { cartItemsStore, addItemToCart, updateQuantity } = useCartStore()
 
   useEffect(() => {
     setLoading(true)
 
-    const unsubscribe = onSnapshot(
+    const unsubProducts = onSnapshot(
       collection(db, 'products'),
       (snapshot) => {
         const data = snapshot.docs.map((doc) => {
@@ -51,7 +54,21 @@ export default function Page() {
       }
     )
 
-    return () => unsubscribe()
+    const unsubAddons = onSnapshot(collection(db, 'addons'), (snapshot) => {
+      setAddons(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          name: doc.data().name || 'Addon',
+          price: Number(doc.data().price) || 0,
+          type: (doc.data().type as 'fixed' | 'per_item') || 'fixed',
+        }))
+      )
+    })
+
+    return () => {
+      unsubProducts()
+      unsubAddons()
+    }
   }, [])
 
   const getCartItem = (productId: string) =>
@@ -60,6 +77,10 @@ export default function Page() {
   const handleAddToCart = (product: Product, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (addons.length > 0) {
+      setPickerProduct(product)
+      return
+    }
     addItemToCart({
       id: product.id,
       name: product.name,
@@ -68,6 +89,20 @@ export default function Page() {
       thumbnail: product.thumbnail,
       slug: product.slug,
     })
+  }
+
+  const handlePickerConfirm = (selectedAddons: CartAddon[], quantity: number) => {
+    if (!pickerProduct) return
+    addItemToCart({
+      id: pickerProduct.id,
+      name: pickerProduct.name,
+      price: pickerProduct.price,
+      quantity,
+      thumbnail: pickerProduct.thumbnail,
+      slug: pickerProduct.slug,
+      addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+    })
+    setPickerProduct(null)
   }
 
   const handleDecrement = (product: Product, e: React.MouseEvent) => {
@@ -120,11 +155,8 @@ export default function Page() {
             href="#"
             onClick={(e) => {
               e.preventDefault()
-              // Build WA message from cart
-              const lines = cartItemsStore.map(
-                (item) => `- ${item.name} x${item.quantity} = ${idrFormatter(item.price * item.quantity)}`
-              )
-              const total = cartItemsStore.reduce((s, i) => s + i.price * i.quantity, 0)
+              const lines = cartItemsStore.flatMap((item) => formatCartItemLines(item))
+              const total = cartSubtotal(cartItemsStore)
               const msg = encodeURIComponent(
                 `Halo Hypermile, saya ingin memesan:\n${lines.join('\n')}\n\nTotal: ${idrFormatter(total)}`
               )
@@ -227,6 +259,15 @@ export default function Page() {
           <p className="text-gray-400 text-sm mt-2">Cek kembali nanti untuk produk terbaru</p>
         </div>
       )}
+
+      <AddonPickerDialog
+        open={!!pickerProduct}
+        onOpenChange={(open) => !open && setPickerProduct(null)}
+        productName={pickerProduct?.name ?? ''}
+        productPrice={pickerProduct?.price ?? 0}
+        addons={addons}
+        onConfirm={handlePickerConfirm}
+      />
     </div>
   )
 }

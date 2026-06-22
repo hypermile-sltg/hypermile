@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ShoppingCart, MessageCircle, Tag, X, CheckCircle } from 'lucide-react'
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -13,6 +14,7 @@ import { Button } from '../ui/button'
 import CartItem from './CartItem'
 import useCartStore from '@/store/cart-store'
 import { idrFormatter } from '@/lib/utils'
+import { cartSubtotal, formatCartItemLines } from '@/lib/cart'
 import { isVoucherAvailable, voucherRemainingQuota } from '@/lib/voucher'
 import { hasRedeemedVoucherInBrowser, markVoucherRedeemedInBrowser } from '@/lib/voucher-storage'
 import { toast } from 'sonner'
@@ -80,7 +82,7 @@ export default function CartButtonServer() {
     setAppliedVoucher(latest)
   }, [vouchers, appliedVoucher?.id])
 
-  const subtotal = cartItemsStore.reduce((s, i) => s + i.price * i.quantity, 0)
+  const subtotal = cartSubtotal(cartItemsStore)
   const discount = appliedVoucher ? Math.round((subtotal * appliedVoucher.percentage) / 100) : 0
   const total = subtotal - discount
 
@@ -149,9 +151,7 @@ export default function CartButtonServer() {
       }
     }
 
-    const lines = cartItemsStore.map(
-      (item) => `- ${item.name} x${item.quantity} = ${idrFormatter(item.price * item.quantity)}`
-    )
+    const lines = cartItemsStore.flatMap((item) => formatCartItemLines(item))
 
     let message = `Halo Hypermile, saya ingin memesan:\n${lines.join('\n')}`
 
@@ -177,15 +177,23 @@ export default function CartButtonServer() {
         </Button>
       </SheetTrigger>
 
-      <SheetContent className="flex w-full flex-col min-[500px]:max-w-sm sm:max-w-md p-0">
+      <SheetContent className="flex w-full flex-col min-[500px]:max-w-sm sm:max-w-md p-0 [&>button.absolute]:hidden">
         <SheetHeader className="px-6 pt-6 pb-4 border-b">
-          <SheetTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5" />
-            Keranjang
-            {totalQty > 0 && (
-              <span className="ml-auto text-xs font-normal text-gray-500">{totalQty} item</span>
-            )}
-          </SheetTitle>
+          <div className="flex items-center justify-between gap-3">
+            <SheetTitle className="flex items-center gap-2 leading-none">
+              <ShoppingCart className="w-5 h-5" />
+              Keranjang
+            </SheetTitle>
+            <div className="flex items-center gap-3 shrink-0">
+              {totalQty > 0 && (
+                <span className="text-xs font-normal text-gray-500">{totalQty} item</span>
+              )}
+              <SheetClose className="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </SheetClose>
+            </div>
+          </div>
         </SheetHeader>
 
         {cartItemsStore.length === 0 ? (

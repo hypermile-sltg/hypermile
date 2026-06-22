@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { idrFormatter } from '@/lib/utils'
+import { cartItemLineTotal } from '@/lib/cart'
 import useCartStore from '@/store/cart-store'
 import { CartItemsStore } from '@/store/cart-store'
 import { Button } from '../ui/button'
@@ -13,7 +14,8 @@ type PropsType = {
 
 export default function CartItem({ data, handleSheetClose }: PropsType) {
   const { removeItemFromCart, updateQuantity } = useCartStore()
-  const { id, name, price, thumbnail, quantity, slug } = data
+  const { id, name, price, thumbnail, quantity, slug, addons } = data
+  const lineTotal = cartItemLineTotal(data)
 
   return (
     <div className="flex gap-3 border-b pb-4">
@@ -56,6 +58,16 @@ export default function CartItem({ data, handleSheetClose }: PropsType) {
           </Button>
         </div>
 
+        {(addons ?? []).length > 0 && (
+          <div className="space-y-0.5">
+            {addons!.map((addon) => (
+              <p key={addon.id} className="text-xs text-gray-500">
+                + {addon.name} × {addon.quantity} ({idrFormatter(addon.price * addon.quantity)})
+              </p>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           {/* Quantity Controls */}
           <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
@@ -76,7 +88,7 @@ export default function CartItem({ data, handleSheetClose }: PropsType) {
 
           {/* Subtotal */}
           <span className="font-bold text-sm text-red-600">
-            {idrFormatter(price * quantity)}
+            {idrFormatter(lineTotal)}
           </span>
         </div>
       </div>

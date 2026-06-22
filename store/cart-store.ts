@@ -1,15 +1,9 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { toast } from 'sonner'
+import { CartItem, mergeCartAddons } from '@/lib/cart'
 
-export type CartItemsStore = {
-  id: string
-  name: string
-  price: number
-  quantity: number
-  thumbnail?: string
-  slug?: string
-}
+export type CartItemsStore = CartItem
 
 type CartState = {
   cartItemsStore: CartItemsStore[]
@@ -26,14 +20,15 @@ const useCartStore = create(
 
       addItemToCart: (newItem) => {
         const currentItems = get().cartItemsStore
-
         const existingIndex = currentItems.findIndex((item) => item.id === newItem.id)
 
         if (existingIndex >= 0) {
+          const existing = currentItems[existingIndex]
           const updatedItems = [...currentItems]
           updatedItems[existingIndex] = {
-            ...updatedItems[existingIndex],
-            quantity: updatedItems[existingIndex].quantity + newItem.quantity,
+            ...existing,
+            quantity: existing.quantity + newItem.quantity,
+            addons: mergeCartAddons(existing.addons, newItem.addons),
           }
           set({ cartItemsStore: updatedItems })
           toast.success('Jumlah produk diperbarui!')

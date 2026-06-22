@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { idrFormatter } from '@/lib/utils'
+import { cartItemLineTotal, cartSubtotal, formatCartItemLines } from '@/lib/cart'
 import useCartStore from '@/store/cart-store'
 import { db } from '@/lib/firebase'
 import { collection, query, where, onSnapshot } from 'firebase/firestore'
@@ -167,6 +168,13 @@ export default function Page({ params }: { params: { slug: string } }) {
 
   const handleAddToCart = () => {
     if (!productData) return
+    const cartAddons = selectedAddons.map((a) => ({
+      id: a.id,
+      name: a.name,
+      price: a.price,
+      quantity: a.qty,
+      type: a.type,
+    }))
     addItemToCart({
       id: productData.id,
       name: productData.name,
@@ -174,33 +182,40 @@ export default function Page({ params }: { params: { slug: string } }) {
       quantity: qty,
       thumbnail: productData.thumbnail,
       slug: productData.slug,
+      addons: cartAddons.length > 0 ? cartAddons : undefined,
     })
   }
 
   const handleOrderViaWA = () => {
     if (!productData) return
 
-    // Bangun pesan
-    const addonLines = selectedAddons.map(
-      (a) => `  + ${a.name} x${a.qty} = ${idrFormatter(a.price * a.qty)}`
-    )
+    const cartAddons = selectedAddons.map((a) => ({
+      id: a.id,
+      name: a.name,
+      price: a.price,
+      quantity: a.qty,
+      type: a.type,
+    }))
 
-    const thisItemLines = [
-      `- ${productData.name} x${qty} = ${idrFormatter(productData.price * qty)}`,
-      ...addonLines,
-    ]
+    const thisItem = {
+      id: productData.id,
+      name: productData.name,
+      price: productData.price,
+      quantity: qty,
+      addons: cartAddons.length > 0 ? cartAddons : undefined,
+    }
 
-    // Gabungkan dengan item di keranjang (jika ada)
+    const thisItemLines = formatCartItemLines(thisItem)
     const cartLines = cartItemsStore
       .filter((i) => i.id !== productData.id)
-      .map((i) => `- ${i.name} x${i.quantity} = ${idrFormatter(i.price * i.quantity)}`)
+      .flatMap((i) => formatCartItemLines(i))
 
     const allLines = [...thisItemLines, ...cartLines]
     const grandTotal =
-      totalPrice +
+      cartItemLineTotal(thisItem) +
       cartItemsStore
         .filter((i) => i.id !== productData.id)
-        .reduce((s, i) => s + i.price * i.quantity, 0)
+        .reduce((s, i) => s + cartItemLineTotal(i), 0)
 
     const message = `Halo Hypermile, saya ingin memesan:\n${allLines.join('\n')}\n\nTotal: ${idrFormatter(grandTotal)}`
     window.open(`https://wa.me/6285900472233?text=${encodeURIComponent(message)}`, '_blank')
