@@ -247,6 +247,7 @@ footer {
     -webkit-mask: linear-gradient(90deg, transparent, white 5%, white 95%, transparent);
     mask: linear-gradient(90deg, transparent, white 5%, white 95%, transparent);
   }
+}
 
 @media (max-width: 767px) {
   #product-details .thumbs-container .swiper-slide {
@@ -257,4 +258,19 @@ footer {
   .testimonial-card {
     min-width: 340px;
   }
-}}
+}
+
+/* Custom scrollbar for horizontal tabs */
+.tabs-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.tabs-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9; /* slate-100 */
+}
+.tabs-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* slate-300 */
+  border-radius: 9999px;
+}
+.tabs-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* slate-400 */
+}

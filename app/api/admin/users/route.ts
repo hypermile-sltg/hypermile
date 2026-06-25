@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { adminDb } from '@/lib/firebase-admin'
+import { adminDb, adminAuth } from '@/lib/firebase-admin'
 import { requireAdmin } from '@/lib/admin-auth'
 import { isSuperAdmin, isValidRole } from '@/lib/roles'
 
@@ -111,3 +111,64 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  const auth = await requireAdmin()
+  if ('error' in auth) return auth.error
+
+  const callerIsSuperAdmin = isSuperAdmin(auth.role)
+  if (!callerIsSuperAdmin) {
+    return NextResponse.json(
+      { error: 'Hanya Super Admin yang dapat menghapus user' },
+      { status: 403 }
+    )
+  }
+
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+
+  if (!id) {
+    return NextResponse.json({ error: 'ID user diperlukan' }, { status: 400 })
+  }
+
+  if (id === auth.uid) {
+    return NextResponse.json(
+      { error: 'Tidak dapat menghapus akun sendiri' },
+      { status: 400 }
+    )
+  }
+
+  try {
+    const userDoc = await adminDb.collection('users').doc(id).get()
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 })
+    }
+
+    const currentRole = userDoc.data()?.role || 'user'
+    if (currentRole === 'superadmin') {
+      const superAdminCount = await countSuperAdmins()
+      if (superAdminCount <= 1) {
+        return NextResponse.json(
+          { error: 'Tidak dapat menghapus super admin terakhir' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // 1. Hapus dari Firestore
+    await adminDb.collection('users').doc(id).delete()
+
+    // 2. Hapus dari Firebase Auth (opsional, tangani jika user tidak ada di auth)
+    try {
+      await adminAuth.deleteUser(id)
+    } catch (authError) {
+      console.warn('Gagal menghapus user dari Firebase Auth (mungkin sudah tidak ada):', authError)
+    }
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Admin users DELETE error:', error)
+    return NextResponse.json({ error: 'Gagal menghapus user' }, { status: 500 })
+  }
+}
+

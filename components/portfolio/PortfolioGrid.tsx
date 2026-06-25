@@ -61,13 +61,12 @@ export function PortfolioGrid({ items, limit }: PortfolioGridProps) {
               className="object-cover group-hover:scale-105 transition-transform duration-500"
               sizes="(max-width: 640px) 50vw, 33vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 md:p-5">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-5">
               {img.title && (
-                <h4 className="text-white font-extrabold text-sm md:text-base leading-tight mb-1">
+                <h4 className="text-white font-semibold text-sm md:text-base leading-tight">
                   {img.title}
                 </h4>
               )}
-              <span className="text-xs text-red-400 font-bold font-sans">Klik untuk Perbesar</span>
             </div>
           </button>
         ))}

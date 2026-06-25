@@ -13,45 +13,35 @@ type LogoCloudProps = React.ComponentProps<"div"> & {
 };
 
 export function LogoCloud({ className, logos, ...props }: LogoCloudProps) {
-  const half = Math.ceil(logos.length / 2);
-  const topLogos = logos.slice(0, half);
-  const bottomLogos = logos.slice(half);
+  if (!logos || logos.length === 0) return null;
+
+  // Duplicate logos if they are too few to prevent gaps in the infinite slider
+  let activeLogos = [...logos];
+  while (activeLogos.length < 12) {
+    activeLogos = [...activeLogos, ...logos];
+  }
 
   return (
     <div
       {...props}
       className={cn(
-        "overflow-hidden py-4 flex flex-col gap-6 [mask-image:linear-gradient(to_right,transparent,black,transparent)]",
+        "overflow-hidden py-4 flex flex-col gap-6 [mask-image:linear-gradient(to_right,transparent,black_15%,black_85%,transparent)]",
         className
       )}
     >
-      {/* Top Row - Infinite to the right */}
-      <InfiniteSlider gap={42} reverse duration={40} durationOnHover={120}>
-        {topLogos.map((logo) => (
-          <img
-            alt={logo.alt}
-            className="pointer-events-none h-4 select-none md:h-5 dark:brightness-0 dark:invert"
-            height={logo.height || "auto"}
-            key={`logo-top-${logo.alt}`}
-            loading="lazy"
-            src={logo.src}
-            width={logo.width || "auto"}
-          />
-        ))}
-      </InfiniteSlider>
-
-      {/* Bottom Row - Infinite to the left */}
-      <InfiniteSlider gap={42} reverse={false} duration={40} durationOnHover={120}>
-        {bottomLogos.map((logo) => (
-          <img
-            alt={logo.alt}
-            className="pointer-events-none h-4 select-none md:h-5 dark:brightness-0 dark:invert"
-            height={logo.height || "auto"}
-            key={`logo-bottom-${logo.alt}`}
-            loading="lazy"
-            src={logo.src}
-            width={logo.width || "auto"}
-          />
+      <InfiniteSlider gap={48} duration={35} durationOnHover={100}>
+        {activeLogos.map((logo, idx) => (
+          <div
+            key={`logo-wrapper-${logo.alt}-${idx}`}
+            className="flex items-center justify-center h-8 md:h-12 w-24 md:w-32 shrink-0"
+          >
+            <img
+              alt={logo.alt}
+              className="pointer-events-none w-full h-full object-contain select-none dark:brightness-0 dark:invert"
+              loading="lazy"
+              src={logo.src}
+            />
+          </div>
         ))}
       </InfiniteSlider>
     </div>

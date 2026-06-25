@@ -20,6 +20,7 @@ import { confirmAction } from '@/lib/confirm-toast'
 import { voucherQuotaLabel } from '@/lib/voucher'
 import { Loader2, Edit2, Trash2, Plus, Check, X } from 'lucide-react'
 import Image from 'next/image'
+import { AdminTabDropdown } from '@/components/admin/AdminTabDropdown'
 
 type Product = {
   id: string
@@ -436,24 +437,31 @@ export default function EditProductPage() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-8 text-gray-800">Manage Packages</h1>
+  const productTabs = [
+    { key: 'products', label: `📦 Produk (${products.length})` },
+    { key: 'addons', label: `➕ Addons (${addons.length})` },
+    { key: 'vouchers', label: `🎟 Voucher (${vouchers.length})` },
+  ] as const
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+  return (
+    <div className="w-full overflow-x-hidden">
+      <h1 className="text-2xl font-bold mb-6 text-gray-800">Manage Packages</h1>
+
+        {/* Mobile: Custom dropdown */}
+        <AdminTabDropdown
+          tabs={productTabs}
+          activeTab={activeTab}
+          onChange={(key) => setActiveTab(key as typeof activeTab)}
+        />
+
+        {/* Desktop: Tab bar */}
+        <div className="hidden md:block bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
           <div className="flex border-b border-gray-200">
-            {(
-              [
-                { key: 'products', label: `📦 Produk (${products.length})` },
-                { key: 'addons', label: `➕ Addons (${addons.length})` },
-                { key: 'vouchers', label: `🎟 Voucher (${vouchers.length})` },
-              ] as const
-            ).map((tab) => (
+            {productTabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
+                className={`flex-1 px-5 py-4 text-center font-medium transition-colors whitespace-nowrap text-sm ${
                   activeTab === tab.key
                     ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -585,9 +593,9 @@ export default function EditProductPage() {
               </div>
             ) : (
               <>
-              <div className="grid md:grid-cols-2 gap-4">
+               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedAddons.items.map((addon) => (
-                  <div key={addon.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div key={addon.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-bold text-lg text-gray-900 mb-2">{addon.name}</h4>
@@ -639,9 +647,9 @@ export default function EditProductPage() {
               </div>
             ) : (
               <>
-              <div className="grid md:grid-cols-2 gap-4">
+               <div className="grid md:grid-cols-2 gap-4">
                 {paginatedVouchers.items.map((voucher) => (
-                  <div key={voucher.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <div key={voucher.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-2 mb-2">
@@ -686,7 +694,7 @@ export default function EditProductPage() {
             )}
           </div>
         )}
-      </div>
+
 
       {/* PRODUCT DIALOG */}
       <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>

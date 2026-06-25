@@ -9,10 +9,10 @@ export default function ServicesPage() {
   const services = [
     {
       icon: <Paintbrush className="h-7 w-7 text-red-600" />,
-      title: "Cat Oven & Body Repair",
-      desc: "Pengecatan oven kedap debu dengan cat standar pabrik premium (Spies Hecker, Sikkens). Restorasi panel penyok, keropos, hingga accident repair berat.",
+      title: "Cat Spray Booth & Body Repair",
+      desc: "Pengecatan spray booth kedap debu dengan cat standar pabrik premium (Spies Hecker, Sikkens). Restorasi panel penyok, keropos, hingga accident repair berat.",
       img: "/service-paint.png",
-      details: ["Cat Oven Standar Pabrik", "Restorasi Panel Penyok/Keropos", "Teknologi Oven Kedap Debu", "Garansi Warna Presisi"]
+      details: ["Cat Spray Booth Standar Pabrik", "Restorasi Panel Penyok/Keropos", "Teknologi Spray Booth Kedap Debu", "Garansi Warna Presisi"]
     },
     {
       icon: <Sparkles className="h-7 w-7 text-red-600" />,
@@ -56,7 +56,7 @@ export default function ServicesPage() {
               <span className="text-red-500">Auto Body Care & Painting</span>
             </h1>
             <p className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-              Dari perbaikan bodi penyok hingga pengecatan oven berstandar premium dan coating, kami memastikan mobil Anda kembali berkilau layaknya baru keluar dari showroom.
+              Dari perbaikan bodi penyok hingga pengecatan spray booth berstandar premium dan coating, kami memastikan mobil Anda kembali berkilau layaknya baru keluar dari showroom.
             </p>
           </motion.div>
         </div>

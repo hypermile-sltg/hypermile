@@ -10,6 +10,9 @@ const ALLOWED_COLLECTIONS = [
   'vouchers',
   'portfolio',
   'testimonials',
+  'settings',
+  'partners',
+  'newsletter',
 ] as const
 
 type AllowedCollection = (typeof ALLOWED_COLLECTIONS)[number]
@@ -57,7 +60,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Missing id or data' }, { status: 400 })
       }
 
-      await adminDb.collection(collection).doc(id).update(data)
+      await adminDb.collection(collection).doc(id).set(data, { merge: true })
       return NextResponse.json({ ok: true })
     }
 
@@ -68,6 +71,21 @@ export async function POST(req: NextRequest) {
 
       await adminDb.collection(collection).doc(id).delete()
       return NextResponse.json({ ok: true })
+    }
+
+    if (action === 'list') {
+      const snapshot = await adminDb.collection(collection).get()
+      const listData = snapshot.docs.map(doc => {
+        const docData = doc.data()
+        return {
+          id: doc.id,
+          ...docData,
+          createdAt: docData.createdAt?.toDate 
+            ? docData.createdAt.toDate().toISOString() 
+            : docData.createdAt || null
+        }
+      })
+      return NextResponse.json({ items: listData })
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })

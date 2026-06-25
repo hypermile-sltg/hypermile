@@ -7,7 +7,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Pagination } from 'swiper/modules'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Sparkles, Paintbrush, Wrench, ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react"
+import { Shield, Sparkles, Paintbrush, Wrench, ChevronLeft, ChevronRight, CheckCircle2, Volume2, VolumeX } from "lucide-react"
 import { toast } from 'sonner'
 import Marquee from 'react-fast-marquee'
 
@@ -20,41 +20,9 @@ import { db } from '../lib/firebase'
 import { collection, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore'
 import { LogoCloud } from '@/components/ui/logo-cloud-3'
 import { sortPortfolioNewestFirst } from '@/lib/portfolio'
+import { getYouTubeId } from '@/lib/youtube'
 
-const partnerLogos = [
-  {
-    src: "https://svgl.app/library/nvidia-wordmark-light.svg",
-    alt: "Nvidia Logo",
-  },
-  {
-    src: "https://svgl.app/library/supabase_wordmark_light.svg",
-    alt: "Supabase Logo",
-  },
-  {
-    src: "https://svgl.app/library/openai_wordmark_light.svg",
-    alt: "OpenAI Logo",
-  },
-  {
-    src: "https://svgl.app/library/turso-wordmark-light.svg",
-    alt: "Turso Logo",
-  },
-  {
-    src: "https://svgl.app/library/vercel_wordmark.svg",
-    alt: "Vercel Logo",
-  },
-  {
-    src: "https://svgl.app/library/github_wordmark_light.svg",
-    alt: "GitHub Logo",
-  },
-  {
-    src: "https://svgl.app/library/claude-ai-wordmark-icon_light.svg",
-    alt: "Claude AI Logo",
-  },
-  {
-    src: "https://svgl.app/library/clerk-wordmark-light.svg",
-    alt: "Clerk Logo",
-  },
-]
+
 
 const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
   const [count, setCount] = useState(value)
@@ -92,7 +60,7 @@ const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: strin
 
 const subtitles = [
   'body repair & dempul',
-  'cat oven & repaint',
+  'cat spray booth & repaint',
   'detailing & coating',
 ]
 
@@ -112,12 +80,82 @@ interface Portfolio {
 
 export default function Home() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [partnerLogos, setPartnerLogos] = useState<{ src: string; alt: string }[]>([])
   const [subtitleIndex, setSubtitleIndex] = useState(0)
   const [selectedImg, setSelectedImg] = useState<string | null>(null)
   const [portfolioImages, setPortfolioImages] = useState<Portfolio[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [email, setEmail] = useState<string>("")
+  const [heroVideoUrl, setHeroVideoUrl] = useState<string | null>(null)
+  const [isMuted, setIsMuted] = useState(true)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
+  // Promo settings state
+  const [promoData, setPromoData] = useState({
+    badge: 'Sertifikasi Global',
+    title: 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
+    description: 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
+    imageUrl: '/promo-refinique.jpg',
+    buttonText: 'Hubungi Admin WA',
+    buttonUrl: 'https://wa.me/6285900472233'
+  })
+
+  const toggleMute = () => {
+    if (!iframeRef.current) return
+    const command = isMuted ? 'unMute' : 'mute'
+    iframeRef.current.contentWindow?.postMessage(
+      JSON.stringify({
+        event: 'command',
+        func: command,
+        args: '',
+      }),
+      '*'
+    )
+    setIsMuted(!isMuted)
+  }
+
+  // Load hero video setting (Real-time)
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "settings", "hero"),
+      (docSnap) => {
+        if (docSnap.exists() && docSnap.data().videoUrl) {
+          setHeroVideoUrl(docSnap.data().videoUrl)
+        } else {
+          setHeroVideoUrl("") // No video URL found, trigger fallback
+        }
+      },
+      (error) => {
+        console.error("Error fetching hero video:", error)
+        setHeroVideoUrl("") // Error, trigger fallback
+      }
+    )
+    return () => unsub()
+  }, [])
+
+  // Load promo setting (Real-time)
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "settings", "promo"),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data()
+          setPromoData({
+            badge: data.badge !== undefined ? data.badge : 'Sertifikasi Global',
+            title: data.title !== undefined ? data.title : 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
+            description: data.description !== undefined ? data.description : 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
+            imageUrl: data.imageUrl !== undefined ? data.imageUrl : '/promo-refinique.jpg',
+            buttonText: data.buttonText !== undefined ? data.buttonText : 'Hubungi Admin WA',
+            buttonUrl: data.buttonUrl !== undefined ? data.buttonUrl : 'https://wa.me/6285900472233'
+          })
+        }
+      },
+      (error) => {
+        console.error("Error fetching promo settings:", error)
+      }
+    )
+    return () => unsub()
+  }, [])
   const HOME_PORTFOLIO_LIMIT = 6
   const homePortfolio = portfolioImages.slice(0, HOME_PORTFOLIO_LIMIT)
 
@@ -165,6 +203,31 @@ export default function Home() {
     )
     return () => unsub();
   }, []);
+
+  // Load partner logos from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, "partners"),
+      (snapshot) => {
+        const data = snapshot.docs.map((docSnap) => ({
+          src: docSnap.data().src || '',
+          alt: docSnap.data().alt || '',
+          createdAt: docSnap.data().createdAt || null,
+        }))
+        data.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeB - timeA
+        })
+        setPartnerLogos(data)
+      },
+      (error) => {
+        console.error("Error fetching partners:", error)
+        setPartnerLogos([])
+      }
+    )
+    return () => unsub()
+  }, [])
 
   // Ganti subtitle otomatis
   useEffect(() => {
@@ -310,7 +373,9 @@ export default function Home() {
             </div>
             
             <h1 className="mb-4 sm:mb-5 text-[1.75rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-black font-sporty text-gray-900 tracking-tighter">
-              Sempurnakan <span className="text-red-600">Estetika & Kilau</span> Mobil Anda
+              <span className="text-red-600">HYPERMILE</span> <br />
+              AUTO BODY <br />
+              WORKS
             </h1>
             
             <div className="mb-3 sm:mb-4">
@@ -365,34 +430,42 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Hero Image */}
-          <div className="relative w-full flex justify-center md:justify-end items-center h-[200px] sm:h-[240px] md:h-auto md:min-h-[420px] lg:min-h-[460px]">
-            <div className="relative w-full max-w-[500px] lg:max-w-[540px] h-full md:aspect-[4/3] md:h-auto group">
+          {/* Hero Video / Image */}
+          <div className="relative w-full flex justify-center md:justify-end items-center mt-6 md:mt-0">
+            <div className="relative w-full max-w-[500px] lg:max-w-[540px] aspect-video group">
               {/* Artisanal dotted border offset */}
-              <div className="absolute inset-0 border-2 border-dashed border-red-600/60 rounded-3xl translate-x-4 translate-y-4 transition-transform duration-500 group-hover:translate-x-2 group-hover:translate-y-2" />
+              <div className="absolute -inset-3 border-2 border-dashed border-red-600/60 rounded-[32px] transition-all duration-500 group-hover:-inset-1.5" />
               
-              {/* Image Container with solid borders */}
-              <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-gray-900 shadow-2xl bg-white p-2.5 transition-transform duration-500 group-hover:-translate-x-1 group-hover:-translate-y-1">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden">
-                  <Image
-                    src="/hero-car.png"
-                    alt="Glossy dark sports car reflecting neon lights"
-                    fill
-                    priority
-                    className="object-cover hover:scale-105 transition-transform duration-700"
-                    sizes="(max-width: 768px) 100vw, 500px"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center bg-black/60 backdrop-blur-md border border-white/10 p-3 rounded-xl">
-                    <div>
-                      <p className="text-xs text-gray-300 font-sans">Featured Restoration</p>
-                      <p className="text-sm font-bold text-white">Porsche 911 Nano Ceramic</p>
-                    </div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-white bg-red-600 px-2 py-1 rounded font-sans">
-                      Wet Look
-                    </span>
+              {/* Media Container with solid borders */}
+              <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-gray-900 shadow-2xl bg-black transition-transform duration-500">
+                {heroVideoUrl === null ? (
+                  // Loading state: black background with spinner
+                  <div className="absolute inset-0 bg-black flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                   </div>
-                </div>
+                ) : getYouTubeId(heroVideoUrl) ? (
+                  <>
+                    <iframe
+                      ref={iframeRef}
+                      src={`https://www.youtube.com/embed/${getYouTubeId(heroVideoUrl)}?autoplay=1&mute=1&loop=1&playlist=${getYouTubeId(heroVideoUrl)}&controls=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&enablejsapi=1`}
+                      title="Hero Video"
+                      allow="autoplay; encrypted-media"
+                      className="absolute inset-0 w-full h-full border-0 pointer-events-none scale-105"
+                    />
+                    <button
+                      onClick={toggleMute}
+                      type="button"
+                      aria-label={isMuted ? "Aktifkan suara" : "Matikan suara"}
+                      className="absolute bottom-2 right-2 z-20 bg-black/50 hover:bg-red-600 backdrop-blur-sm border border-white/15 p-1.5 rounded-full text-white shadow-md hover:scale-110 active:scale-95 transition-all"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-3.5 h-3.5 text-white" />
+                      ) : (
+                        <Volume2 className="w-3.5 h-3.5 text-white" />
+                      )}
+                    </button>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>
@@ -402,10 +475,10 @@ export default function Home() {
       {/* Logo Cloud Section */}
       <section className="section-full-width py-12 relative bg-[#f8f9fa] border-b border-gray-200/50">
         <div className="container mx-auto px-4 md:px-12 relative max-w-3xl">
-          <h2 className="mb-5 text-center font-medium text-foreground text-xl tracking-tight md:text-3xl">
-            <span className="text-muted-foreground">Trusted by brands & partners.</span>
-            <br />
-            <span className="font-semibold">Used by the leaders.</span>
+          <h2 className="mb-5 text-center font-bold text-foreground text-xl tracking-tight md:text-2xl lg:text-3xl font-sans">
+            <span className="text-muted-foreground font-normal">Dipercaya oleh</span>{" "}
+            <span className="font-extrabold font-sporty text-gray-900">Brand & Partner Otomotif Terkemuka</span>
+            <span className="text-red-600">.</span>
           </h2>
           <div className="mx-auto my-5 h-px max-w-sm bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
 
@@ -419,11 +492,15 @@ export default function Home() {
       <section className="section-full-width py-12 relative bg-[#f8f9fa]">
         <div className="container mx-auto px-4 md:px-12">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
-            <div className="max-w-2xl">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-red-600">Galeri Portofolio</span>
-              <h2 className="text-3xl md:text-5xl font-extrabold mt-2 text-gray-900">Hasil Kerja Kami</h2>
-              <p className="text-gray-600 text-sm mt-3 leading-relaxed">
-                Kompilasi foto mobil klien yang telah selesai melewati proses detailing, poles, cat oven, maupun modifikasi bodi di workshop kami.
+            <div className="max-w-2xl text-left">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+                Galeri Portofolio
+              </span>
+              <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+                Masterpiece Hypermile<span className="text-red-600">.</span>
+              </h2>
+              <p className="text-gray-600 text-sm md:text-base mt-4 leading-relaxed font-normal">
+                Galeri hasil karya terbaik kami. Mulai dari pengerjaan body repair presisi, pengecatan menggunakan spray booth profesional, hingga detailing mendalam yang mengembalikan kilau sempurna mobil Anda.
               </p>
             </div>
             {homePortfolio.length > 1 && (
@@ -491,11 +568,10 @@ export default function Home() {
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 33vw, 280px"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
                         {img.title && (
-                          <h4 className="text-white font-extrabold text-base leading-tight mb-1">{img.title}</h4>
+                          <h4 className="text-white font-semibold text-base leading-tight">{img.title}</h4>
                         )}
-                        <span className="text-xs text-red-400 font-bold font-sans">Klik untuk Perbesar</span>
                       </div>
                     </div>
                   </SwiperSlide>
@@ -550,30 +626,58 @@ export default function Home() {
         </AnimatePresence>
       </section>
 
-      {/* Promo & WhatsApp CTA Section */}
-      <section className="section-full-width py-12 bg-[#f8f9fa]">
-        <div className="container mx-auto px-4">
-          <div className="bg-gradient-to-r from-red-600 via-red-500 to-amber-500 text-white rounded-3xl relative overflow-hidden py-16 px-6 md:py-20 md:px-12 text-center shadow-xl">
-            <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-black/20 rounded-full blur-3xl" />
+      {/* Promo & News Section (PPG Refinique Certification) */}
+      <section className="section-full-width py-16 bg-[#f8f9fa] border-t border-gray-200/50">
+        <div className="container mx-auto px-4 md:px-12">
+          <div className="bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-8 md:p-12 lg:p-16 shadow-2xl border border-zinc-800">
+            <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
             
-            <div className="relative z-10 max-w-4xl mx-auto">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-black bg-white px-3 py-1 rounded-full font-sans">
-                Promo Terbatas Bulan Ini
-              </span>
-              <h2 className="text-4xl md:text-6xl font-black mt-4 mb-4 tracking-tight">
-                Free Car Detailing untuk Cat Full Body
-              </h2>
-              <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto text-white/90 leading-relaxed">
-                Dapatkan paket interior & engine bay detailing senilai <span className="font-extrabold text-black">Rp 1.000.000</span> secara gratis untuk setiap pemesanan cat siram full body oven.
-              </p>
-              <div className="flex justify-center gap-4 flex-wrap">
-                <Link href="/products" className="inline-block px-10 py-4 bg-black hover:bg-black/80 text-white font-extrabold rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
-                  Ambil Promo Sekarang
-                </Link>
-                <a href="https://wa.me/6285900472233" target="_blank" rel="noopener noreferrer" className="inline-block px-8 py-4 bg-white text-red-600 font-extrabold rounded-xl shadow-xl hover:bg-white/90 transition-all">
-                  Hubungi Admin WA
-                </a>
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+              {/* Image Collage / Poster */}
+              {promoData.imageUrl && (
+                <div className="lg:col-span-5 w-full flex justify-center">
+                  <div className="relative w-full max-w-sm aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
+                    <Image
+                      src={promoData.imageUrl}
+                      alt={promoData.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 400px"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {/* Content Details */}
+              <div className={promoData.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
+                {promoData.badge && (
+                  <span className="text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-1.5 rounded-full font-sans mb-5 inline-block">
+                    {promoData.badge}
+                  </span>
+                )}
+                
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 tracking-tight text-white leading-tight font-sporty">
+                  {promoData.title}
+                </h2>
+                
+                <p className="text-base sm:text-lg text-zinc-300 mb-8 leading-relaxed whitespace-pre-line font-sans font-normal">
+                  {promoData.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-4">
+                  {promoData.buttonText && promoData.buttonUrl && (
+                    <a
+                      href={promoData.buttonUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                    >
+                      {promoData.buttonText}
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -584,8 +688,12 @@ export default function Home() {
       {testimonials.length > 0 && (
         <section className="section-full-width py-24 text-center relative bg-[#f8f9fa] no-scroll-y border-t border-gray-200">
           <div className="container mx-auto px-4 mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600">Testimoni Pelanggan</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold mt-2 text-gray-900">Apa Kata Pemilik Kendaraan</h2>
+            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+              Testimoni Pelanggan
+            </span>
+            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+              Apa Kata Pemilik Kendaraan<span className="text-red-600">.</span>
+            </h2>
           </div>
 
           {/* Desktop - Marquee */}
@@ -640,34 +748,38 @@ export default function Home() {
       <section className="section-full-width py-24 bg-[#f8f9fa] border-t border-gray-200">
         <div className="container mx-auto px-4 md:px-12">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600">Keunggulan Kami</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold mt-2 text-gray-900">Mengapa Memilih Hypermile</h2>
+            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+              Keunggulan Kami
+            </span>
+            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+              Mengapa Memilih Hypermile<span className="text-red-600">.</span>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
                 icon: <Paintbrush className="h-6 w-6 text-red-600" />,
-                title: "Fasilitas Oven Spray Booth",
-                desc: "Pengecatan bebas debu, matang merata, menghasilkan lapisan cat orisinil yang kuat dan halus.",
+                title: "Fasilitas Spray Booth",
+                desc: "Didukung fasilitas spray booth modern untuk hasil pengecatan yang bersih, merata, dan bebas debu.",
                 bg: "bg-white shadow-sm"
               },
               {
                 icon: <CheckCircle2 className="h-6 w-6 text-red-600" />,
-                title: "Teknisi Painter Berlisensi",
-                desc: "Painter berpengalaman khusus restorasi mobil sport, modifikasi kontes, hingga perbaikan harian.",
+                title: "Teknisi Berlisensi",
+                desc: "Dikerjakan oleh teknisi berpengalaman dan bersertifikasi untuk memastikan kualitas pengerjaan terbaik.",
                 bg: "bg-white shadow-sm"
               },
               {
                 icon: <Sparkles className="h-6 w-6 text-red-600" />,
-                title: "Bahan Premium Standar Kontes",
-                desc: "Menggunakan pernis tebal tinggi (high solid) serta cat import berkualitas tinggi.",
+                title: "Bahan Premium",
+                desc: "Menggunakan cat dan material berkualitas tinggi untuk hasil yang kuat, tahan lama, dan sesuai standar.",
                 bg: "bg-white shadow-sm"
               },
               {
                 icon: <Shield className="h-6 w-6 text-red-600" />,
-                title: "Garansi Cat 1 Tahun",
-                desc: "Jaminan kepuasan hasil pengerjaan. Kami siap cat ulang jika terjadi retak/belang dalam setahun.",
+                title: "Garansi 1 Tahun",
+                desc: "Garansi hingga 1 tahun untuk layanan body repair dan body repaint sebagai jaminan kualitas pekerjaan.",
                 bg: "bg-white shadow-sm"
               }
             ].map((item, idx) => (
@@ -678,7 +790,7 @@ export default function Home() {
                 <div className="p-3 w-fit rounded-xl bg-red-50 mb-4">
                   {item.icon}
                 </div>
-                <h4 className="text-xl font-bold mb-2 text-gray-900">{item.title}</h4>
+                <h4 className="text-lg font-bold mb-2 text-gray-900">{item.title}</h4>
                 <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
@@ -690,27 +802,31 @@ export default function Home() {
       <section className="section-full-width py-24 bg-[#f8f9fa] border-t border-gray-200">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600">FAQ</span>
-            <h2 className="text-3xl md:text-5xl font-extrabold mt-2 text-gray-900">Pertanyaan Umum</h2>
+            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+              FAQ
+            </span>
+            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+              Pertanyaan Umum<span className="text-red-600">.</span>
+            </h2>
           </div>
           
           <div className="space-y-4">
             {[
               {
-                q: "Berapa lama proses pengecatan satu panel mobil?",
-                a: "Pengecatan bodi ringan per panel biasanya membutuhkan waktu 1 s.d. 2 hari kerja, meliputi proses gosok sasis, dempul, epoxy primer, cat warna, pernis, dan pemanggangan oven."
+                q: "Berapa lama pengerjaan cat per panel mobil?",
+                a: "Untuk perbaikan ringan per panel (seperti bemper baret atau pintu penyok ringan), biasanya membutuhkan waktu 1 hingga 2 hari kerja. Ini sudah mencakup seluruh proses mulai dari pembersihan, pendempulan, epoxy dasar, pengecatan warna, pernis, hingga pengovenan."
               },
               {
-                q: "Apa bedanya Nano Ceramic dengan poles biasa?",
-                a: "Poles biasa hanya memotong vernis untuk menghilangkan baret halus dan bertahan beberapa minggu. Nano ceramic mengikat secara kimiawi pada vernis cat, membentuk lapisan kaca keras yang melindungi dari asam, UV, baret halus, dan memberikan efek hydrophobic permanen."
+                q: "Apa perbedaan Nano Coating dengan poles biasa?",
+                a: "Poles biasa hanya memotong permukaan pernis untuk menghilangkan baret halus dan sifatnya sementara. Sedangkan Nano Ceramic Coating memberikan lapisan pelindung tambahan (kaca keras) di atas cat yang melindungi dari sinar matahari (UV), hujan asam, jamur, serta efek daun talas yang tahan lama."
               },
               {
-                q: "Apakah bisa mengajukan klaim asuransi di Hypermile?",
-                a: "Saat ini kami menerima perbaikan umum secara mandiri, restorasi, modifikasi, serta kerja sama rekanan asuransi tertentu. Silakan hubungi admin via WhatsApp untuk memverifikasi polis Anda."
+                q: "Apakah workshop Hypermile melayani klaim asuransi?",
+                a: "Saat ini kami fokus melayani perbaikan umum non-asuransi (pribadi), restorasi total, dan modifikasi bodi. Untuk informasi kemitraan asuransi tertentu, silakan langsung diskusikan dengan tim kami via WhatsApp."
               }
             ].map((faq, idx) => (
-              <div key={idx} className="p-6 bg-[#f8f9fa] rounded-2xl border border-gray-200">
-                <h4 className="font-extrabold text-gray-900 text-base md:text-lg mb-2">{faq.q}</h4>
+              <div key={idx} className="p-6 bg-white shadow-sm rounded-2xl border border-gray-200">
+                <h4 className="font-bold text-gray-900 text-base md:text-lg mb-2">{faq.q}</h4>
                 <p className="text-gray-600 text-sm leading-relaxed">{faq.a}</p>
               </div>
             ))}
@@ -720,10 +836,14 @@ export default function Home() {
 
       {/* Newsletter Section */}
       <section className="section-full-width py-20 bg-[#f8f9fa] text-center px-4 border-t border-gray-200">
-        <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 font-sans">Newsletter</span>
-        <h2 className="text-3xl md:text-5xl font-black mt-2 mb-3 text-gray-900 tracking-tight">Dapatkan Info Promo & Tips Perawatan</h2>
+        <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+          Newsletter
+        </span>
+        <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 mb-4 text-gray-900 leading-tight">
+          Gabung ke Newsletter Kami<span className="text-red-600">.</span>
+        </h2>
         <p className="mb-8 text-gray-600 text-sm md:text-base max-w-lg mx-auto leading-relaxed">
-          Masukkan email Anda untuk menerima informasi diskon khusus pengecatan, tips poles mobil mandiri, dan jadwal event otomotif.
+          Dapatkan tips berkala merawat cat mobil agar tetap mengkilap, info promo khusus bulanan, dan update terbaru langsung ke inbox Anda.
         </p>
         <form
           className="flex justify-center gap-2 flex-wrap max-w-sm mx-auto"
@@ -742,7 +862,7 @@ export default function Home() {
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl transition-all duration-300 text-sm shadow-md shadow-red-600/10 animate-pulse-slow"
+            className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl transition-all duration-300 text-sm shadow-md shadow-red-600/10"
           >
             Subscribe
           </button>

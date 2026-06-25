@@ -1,5 +1,5 @@
-type AdminCollection = 'products' | 'addons' | 'vouchers' | 'portfolio' | 'testimonials'
-type AdminAction = 'create' | 'update' | 'delete'
+type AdminCollection = 'products' | 'addons' | 'vouchers' | 'portfolio' | 'testimonials' | 'settings' | 'partners' | 'newsletter'
+type AdminAction = 'create' | 'update' | 'delete' | 'list'
 
 export async function adminFirestoreWrite({
   collection,
@@ -24,5 +24,5 @@ export async function adminFirestoreWrite({
     throw new Error(json.error || 'Operasi gagal')
   }
 
-  return json as { id?: string; ok?: boolean }
+  return json as { id?: string; ok?: boolean; items?: any[] }
 }

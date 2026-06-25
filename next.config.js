@@ -143,11 +143,13 @@ const nextConfig = {
 
   // Webpack optimization - Reduces unused JS
   webpack: (config, { dev, isServer }) => {
-    config.watchOptions = {
-      ...config.watchOptions,
-      // Use RegExp directly to bypass watchpack's glob-to-regex conversion
-      // which breaks on Windows paths containing backslashes and parens
-      ignored: /node_modules|\.next|System Volume Information|pagefile\.sys|swapfile\.sys|hiberfil\.sys|DumpStack\.log\.tmp/,
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        // Use RegExp (required by Watchpack) to ignore Windows system paths that
+        // cause EINVAL lstat errors during initial file-system scan.
+        ignored: /System Volume Information|node_modules|\.next|pagefile\.sys|swapfile\.sys|hiberfil\.sys|DumpStack\.log\.tmp/,
+      }
     }
 
     // Production optimizations
@@ -164,7 +166,6 @@ const nextConfig = {
         config.optimization = {
           ...config.optimization,
           moduleIds: 'deterministic',
-          runtimeChunk: 'single',
           splitChunks: {
             chunks: 'all',
             cacheGroups: {

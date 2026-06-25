@@ -1,7 +1,6 @@
 'use client'
 
 import ProfileNav from '@/components/layout/ProfileNav'
-import { Separator } from '@/components/ui/separator'
 
 interface ProfileLayoutClientProps {
   children: React.ReactNode
@@ -13,14 +12,12 @@ export default function ProfileLayoutClient({
   initialRole,
 }: ProfileLayoutClientProps) {
   return (
-    <div className="flex flex-col gap-5 md:flex-row md:gap-6">
-      <div className="w-full md:w-auto md:flex-shrink-0">
+    <div className="flex flex-col gap-3 md:flex-row md:gap-6 items-start overflow-x-hidden w-full px-4 pt-6 pb-4 md:px-0 md:pt-8 md:pb-0">
+      <div className="w-full md:w-64 md:flex-shrink-0">
         <ProfileNav userRole={initialRole} />
       </div>
 
-      <Separator className="block md:hidden" />
-
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 w-full overflow-x-hidden">{children}</div>
     </div>
   )
 }

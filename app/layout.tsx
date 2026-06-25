@@ -17,8 +17,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: 'Hypermile Bodyworks – Body Repair & Detailing Premium',
-  description: 'Hypermile Bodyworks adalah workshop spesialis cat oven, body repair, premium paint polish, dan nano ceramic coating di Salatiga dengan hasil presisi dan bergaransi.',
-  keywords: ['Hypermile Bodyworks', 'Body Repair Salatiga', 'Cat Oven Salatiga', 'Salon Mobil Salatiga', 'Nano Ceramic Salatiga', 'Poles Mobil Salatiga'],
+  description: 'Hypermile Bodyworks adalah workshop spesialis cat spray booth, body repair, premium paint polish, dan nano ceramic coating di Salatiga dengan hasil presisi dan bergaransi.',
+  keywords: ['Hypermile Bodyworks', 'Body Repair Salatiga', 'Cat Spray Booth Salatiga', 'Salon Mobil Salatiga', 'Nano Ceramic Salatiga', 'Poles Mobil Salatiga'],
+  icons: {
+    icon: '/favicon.ico?v=2',
+  },
   openGraph: {
     title: 'Hypermile Bodyworks – Body Repair & Detailing Premium',
     description: 'Sempurnakan estetika dan kilau mobil Anda dengan layanan restorasi bodi dan coating bergaransi dari Hypermile Bodyworks.',
@@ -62,7 +65,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Header />
               <Separator className="hidden md:block" />
 
-              <main className="flex-1 pb-20">
+              <main className="flex-1 pb-20 px-0">
                 <ProgressbarProvider>{children}</ProgressbarProvider>
               </main>
 

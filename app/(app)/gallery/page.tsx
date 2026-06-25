@@ -7,7 +7,7 @@ import { PortfolioGrid, type PortfolioItem } from '@/components/portfolio/Portfo
 import { AdminPagination, paginateList } from '@/components/admin/AdminPagination'
 import { sortPortfolioNewestFirst } from '@/lib/portfolio'
 
-const GALLERY_PAGE_SIZE = 9
+const GALLERY_PAGE_SIZE = 12
 
 export default function GalleryPage() {
   const [portfolioImages, setPortfolioImages] = useState<PortfolioItem[]>([])
@@ -43,6 +43,11 @@ export default function GalleryPage() {
     GALLERY_PAGE_SIZE
   )
 
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
   }, [page, totalPages])
@@ -60,7 +65,7 @@ export default function GalleryPage() {
             </h1>
             <p className="text-gray-600 text-sm mt-3 leading-relaxed">
               Kompilasi foto mobil klien yang telah selesai melewati proses detailing, poles, cat
-              oven, maupun modifikasi bodi di workshop kami.
+              spray booth, maupun modifikasi bodi di workshop kami.
             </p>
           </div>
 
@@ -74,9 +79,8 @@ export default function GalleryPage() {
               <AdminPagination
                 totalItems={portfolioImages.length}
                 page={page}
-                onPageChange={setPage}
+                onPageChange={handlePageChange}
                 pageSize={GALLERY_PAGE_SIZE}
-                label="foto"
               />
             </div>
           )}

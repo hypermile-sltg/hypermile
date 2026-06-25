@@ -1,4 +1,4 @@
-import { Users, LayoutGrid } from 'lucide-react'
+import { Users, LayoutTemplate, ShoppingBag } from 'lucide-react'
 import { isAdminRole } from '@/lib/roles'
 
 // HEADER
@@ -32,14 +32,19 @@ export const navMenu = [
 // PROFILE MENU (admin only)
 const adminProfileMenu = [
   {
-    title: 'Manage User',
+    title: 'Manage Users',
     href: '/profile',
     icon: Users,
   },
   {
-    title: 'Manage Content',
-    href: '/profile/admin',
-    icon: LayoutGrid,
+    title: 'Edit Layout Home',
+    href: '/profile/admin/edit-layout',
+    icon: LayoutTemplate,
+  },
+  {
+    title: 'Manage Products',
+    href: '/profile/admin/edit-product',
+    icon: ShoppingBag,
   },
 ]
 

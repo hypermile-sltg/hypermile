@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, ChevronRight, Loader2, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Trash2, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { isSuperAdmin, roleLabel } from '@/lib/roles'
 
@@ -49,6 +49,7 @@ export default function ManageUsersPage() {
   const [callerRole, setCallerRole] = useState<string>('admin')
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [page, setPage] = useState(1)
 
   const fetchUsers = useCallback(async () => {
@@ -73,8 +74,6 @@ export default function ManageUsersPage() {
   const safePage = Math.min(page, totalPages)
   const startIndex = (safePage - 1) * PAGE_SIZE
   const paginatedUsers = users.slice(startIndex, startIndex + PAGE_SIZE)
-  const rangeStart = users.length === 0 ? 0 : startIndex + 1
-  const rangeEnd = Math.min(startIndex + PAGE_SIZE, users.length)
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -106,6 +105,28 @@ export default function ManageUsersPage() {
     }
   }
 
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus user "${userName}"? Tindakan ini tidak dapat dibatalkan.`)) {
+      return
+    }
+
+    setDeletingId(userId)
+    try {
+      const res = await fetch(`/api/admin/users?id=${userId}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus user')
+
+      toast.success(`User "${userName}" berhasil dihapus`)
+      fetchUsers()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal menghapus user')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[40vh] text-muted-foreground">
@@ -118,7 +139,7 @@ export default function ManageUsersPage() {
   const callerIsSuperAdmin = isSuperAdmin(callerRole)
 
   return (
-    <div className="text-xs">
+    <div className="text-xs overflow-x-hidden">
       <div className="mb-6">
         <p className="text-muted-foreground text-sm mb-3">
           Anda masuk sebagai{' '}
@@ -152,6 +173,7 @@ export default function ManageUsersPage() {
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Role</th>
                   <th className="px-4 py-3 font-medium">Daftar</th>
+                  {callerIsSuperAdmin && <th className="px-4 py-3 font-medium text-right">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -203,6 +225,20 @@ export default function ManageUsersPage() {
                       <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(user.createdAt)}
                       </td>
+                      {callerIsSuperAdmin && (
+                        <td className="px-4 py-3 text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={isSelf || deletingId === user.id}
+                            onClick={() => handleDeleteUser(user.id, user.name)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200/50 h-8 px-2 md:px-3"
+                          >
+                            <Trash2 className="h-4 w-4 md:mr-2" />
+                            <span className="hidden md:inline">Hapus</span>
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}
@@ -211,35 +247,30 @@ export default function ManageUsersPage() {
           </div>
 
           {users.length > PAGE_SIZE && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t bg-muted/30">
-              <p className="text-muted-foreground text-[11px]">
-                Menampilkan {rangeStart}–{rangeEnd} dari {users.length} user
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs"
-                  disabled={safePage <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5 mr-1" />
-                  Sebelumnya
-                </Button>
-                <span className="text-[11px] text-muted-foreground min-w-[88px] text-center">
-                  {safePage} / {totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 text-xs"
-                  disabled={safePage >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Selanjutnya
-                  <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                </Button>
-              </div>
+            <div className="flex items-center justify-center gap-2 px-4 py-3 border-t bg-muted/30">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={safePage <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label="Halaman sebelumnya"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-[11px] text-muted-foreground min-w-[48px] text-center font-medium tabular-nums">
+                {safePage} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                aria-label="Halaman selanjutnya"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>

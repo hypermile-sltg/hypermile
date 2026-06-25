@@ -40,7 +40,7 @@ export default function AboutPage() {
               <span className="text-red-500">Proteksi Cat Premium</span>
             </h1>
             <p className="text-gray-300 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-              Kami adalah workshop spesialis perbaikan bodi (body repair), pengecatan oven berstandar premium, and perlindungan kaca nano ceramic coating yang berdedikasi menjaga penampilan mobil Anda tetap prima.
+              Kami adalah workshop spesialis perbaikan bodi (body repair), pengecatan spray booth berstandar premium, and perlindungan kaca nano ceramic coating yang berdedikasi menjaga penampilan mobil Anda tetap prima.
             </p>
           </motion.div>
         </div>
@@ -74,7 +74,7 @@ export default function AboutPage() {
               Lahir dari Semangat Keindahan Otomotif
             </h2>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed mb-4">
-              Didirikan dengan visi untuk menghadirkan kualitas restorasi bodi mobil setingkat pabrikan, Hypermile memadukan teknologi oven spray booth modern dengan keahlian tangan painter profesional.
+              Didirikan dengan visi untuk menghadirkan kualitas restorasi bodi mobil setingkat pabrikan, Hypermile memadukan teknologi spray booth modern dengan keahlian tangan painter profesional.
             </p>
             <p className="text-gray-600 text-sm md:text-base leading-relaxed mb-6">
               Kami memahami bahwa mobil bukan sekadar alat transportasi, melainkan aset berharga dan kebanggaan pemiliknya. Oleh karena itu, setiap detail pengerjaan mulai dari ketukan dempul yang presisi hingga tahap poles akhir (finishing) dilakukan dengan standar kontrol kualitas yang ketat.
@@ -166,14 +166,14 @@ export default function AboutPage() {
           <div className="relative group overflow-hidden rounded-3xl border-2 border-gray-900 shadow-lg aspect-video">
             <img
               src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&auto=format&fit=crop&q=80"
-              alt="Fasilitas Oven Spray Booth"
+              alt="Fasilitas Spray Booth"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <span className="flex items-center gap-1.5 text-red-500 font-bold text-xs uppercase tracking-wider mb-1">
-                <CheckCircle2 className="h-4 w-4" /> Spray Oven Booth
+                <CheckCircle2 className="h-4 w-4" /> Spray Booth
               </span>
-              <h4 className="text-lg font-bold">Ruang Oven Bebas Debu</h4>
+              <h4 className="text-lg font-bold">Ruang Spray Booth Bebas Debu</h4>
               <p className="text-gray-300 text-xs mt-1 leading-relaxed">
                 Menjamin partikel debu luar tidak menempel pada permukaan cat basah, serta menghasilkan pengeringan cat yang matang merata di setiap sudut panel.
               </p>

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import UserAccountNav from '../auth/UserAccountNav'
 import DesktopMenu from './DesktopMenu'
 import Cart from '../cart/Cart'
@@ -41,14 +42,14 @@ export default function Header() {
       <div className="hidden md:block absolute top-0 left-0 w-full z-40 bg-transparent pointer-events-none">
         <div className="container mx-auto flex items-center py-4 px-4 md:px-8 h-20">
           <Link href="/" className="pointer-events-auto flex items-center">
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-xl font-extrabold tracking-wider text-gray-900">
-                HYPER<span className="text-red-600">MILE</span>
-              </span>
-              <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500">
-                Bodyworks
-              </span>
-            </div>
+            <Image
+              src="/hypermile2.png"
+              alt="Hypermile Logo"
+              width={220}
+              height={55}
+              priority
+              className="object-contain h-[52px] w-auto"
+            />
           </Link>
         </div>
       </div>
@@ -82,13 +83,15 @@ export default function Header() {
         <div className="flex items-center justify-between px-3 py-2 rounded-full border shadow-lg backdrop-blur-sm bg-white/90 border-gray-200/60">
 
           {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-1.5 pl-1">
-            <span className="text-base font-extrabold tracking-wider text-gray-900">
-              HYPER<span className="text-red-600">MILE</span>
-            </span>
-            <span className="text-[9px] uppercase font-bold tracking-widest text-gray-400 leading-tight">
-              Bodyworks
-            </span>
+          <Link href="/" className="flex items-center pl-1">
+            <Image
+              src="/hypermile.png"
+              alt="Hypermile Logo"
+              width={120}
+              height={30}
+              priority
+              className="object-contain h-7 w-auto"
+            />
           </Link>
 
           {/* Right: Cart + Burger */}
