@@ -96,8 +96,8 @@ export default function Home() {
     title: 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
     description: 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
     imageUrl: '/promo-refinique.jpg',
-    buttonText: 'Hubungi Admin WA',
-    buttonUrl: 'https://wa.me/6285900472233'
+    buttonText: '',
+    buttonUrl: ''
   })
 
   const toggleMute = () => {
@@ -145,8 +145,8 @@ export default function Home() {
             title: data.title !== undefined ? data.title : 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
             description: data.description !== undefined ? data.description : 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
             imageUrl: data.imageUrl !== undefined ? data.imageUrl : '/promo-refinique.jpg',
-            buttonText: data.buttonText !== undefined ? data.buttonText : 'Hubungi Admin WA',
-            buttonUrl: data.buttonUrl !== undefined ? data.buttonUrl : 'https://wa.me/6285900472233'
+            buttonText: data.buttonText !== undefined ? data.buttonText : '',
+            buttonUrl: data.buttonUrl !== undefined ? data.buttonUrl : ''
           })
         }
       },
