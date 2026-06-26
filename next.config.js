@@ -28,12 +28,20 @@ const csp = `
     https://*.google.com
     https://*.firebaseapp.com
     https://*.youtube.com
-    https://*.youtube-nocookie.com;
+    https://*.youtube-nocookie.com
+    https://*.instagram.com
+    https://*.facebook.com
+    https://*.vimeo.com
+    https://*.tiktok.com;
   child-src 'self'
     https://*.google.com
     https://*.firebaseapp.com
     https://*.youtube.com
-    https://*.youtube-nocookie.com;
+    https://*.youtube-nocookie.com
+    https://*.instagram.com
+    https://*.facebook.com
+    https://*.vimeo.com
+    https://*.tiktok.com;
 `.replace(/\s{2,}/g, ' ').trim()
 
 const nextConfig = {
