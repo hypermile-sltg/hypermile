@@ -26,10 +26,14 @@ const csp = `
   font-src 'self' https://fonts.gstatic.com data:;
   frame-src 'self'
     https://*.google.com
-    https://*.firebaseapp.com;
+    https://*.firebaseapp.com
+    https://*.youtube.com
+    https://*.youtube-nocookie.com;
   child-src 'self'
     https://*.google.com
-    https://*.firebaseapp.com;
+    https://*.firebaseapp.com
+    https://*.youtube.com
+    https://*.youtube-nocookie.com;
 `.replace(/\s{2,}/g, ' ').trim()
 
 const nextConfig = {
