@@ -11,30 +11,30 @@ import SessionProvider from '@/components/SessionProvider'
 import { Toaster } from 'sonner'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
-import WhatsAppButton from '@/components/global/WhatsappButton' 
+import WhatsAppButton from '@/components/global/WhatsappButton'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
-  title: 'Hypermile Bodyworks – Body Repair & Detailing Premium',
-  description: 'Hypermile Bodyworks adalah workshop spesialis cat spray booth, body repair, premium paint polish, dan nano ceramic coating di Salatiga dengan hasil presisi dan bergaransi.',
-  keywords: ['Hypermile Bodyworks', 'Body Repair Salatiga', 'Cat Spray Booth Salatiga', 'Salon Mobil Salatiga', 'Nano Ceramic Salatiga', 'Poles Mobil Salatiga'],
+  title: 'Hypermile Auto Bodyworks – Body Repair & Detailing Premium',
+  description: 'Hypermile Auto Bodyworks adalah workshop spesialis cat spray booth, body repair, premium paint polish, dan nano ceramic coating di Salatiga dengan hasil presisi dan bergaransi.',
+  keywords: ['Hypermile Auto Bodyworks', 'Body Repair Salatiga', 'Cat Spray Booth Salatiga', 'Salon Mobil Salatiga', 'Nano Ceramic Salatiga', 'Poles Mobil Salatiga'],
   icons: {
     icon: '/favicon.ico?v=2',
   },
   openGraph: {
-    title: 'Hypermile Bodyworks – Body Repair & Detailing Premium',
-    description: 'Sempurnakan estetika dan kilau mobil Anda dengan layanan restorasi bodi dan coating bergaransi dari Hypermile Bodyworks.',
+    title: 'Hypermile Auto Bodyworks – Body Repair & Detailing Premium',
+    description: 'Sempurnakan estetika dan kilau mobil Anda dengan layanan restorasi bodi dan coating bergaransi dari Hypermile Auto Bodyworks.',
     url: 'https://hypermilebengkel.com',
-    siteName: 'Hypermile Bodyworks',
+    siteName: 'Hypermile Auto Bodyworks',
     locale: 'id_ID',
     type: 'website',
     images: [
       {
-        url: 'https://hypermilebengkel.com/hypermile.jpg',
+        url: 'https://hypermilebengkel.com/hypermile.png',
         width: 1200,
         height: 630,
-        alt: 'Hypermile Bodyworks - Body Repair & Detailing Premium',
+        alt: 'Hypermile Auto Bodyworks - Body Repair & Detailing Premium',
       },
     ],
   },
@@ -73,7 +73,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Footer />
             </div>
 
-            
+
             <WhatsAppButton />
           </SessionProvider>
         </ThemeProvider>
