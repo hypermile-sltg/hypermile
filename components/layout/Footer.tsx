@@ -46,11 +46,13 @@ const Footer = () => {
                 className="cursor-pointer flex items-center gap-2"
                 onClick={handleLogoClick}
               >
-                <div className="px-3 py-1.5 bg-white border border-gray-200 shadow-sm rounded-xl flex items-center gap-1.5">
-                  <span className="text-lg font-extrabold tracking-wider text-gray-900">
-                    HYPER<span className="text-red-600">MILE</span>
-                  </span>
-                </div>
+                <Image
+                  src="/hypermile2.png"
+                  alt="Hypermile Logo"
+                  width={180}
+                  height={45}
+                  className="object-contain h-11 w-auto"
+                />
               </div>
               <p className="text-gray-600 text-sm">
                 Premium Auto Body Works, Detailing, Paint Correction & Nano Ceramic Coating.
