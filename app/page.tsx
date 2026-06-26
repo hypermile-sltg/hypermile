@@ -658,8 +658,8 @@ export default function Home() {
                   </span>
                 )}
                 
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 tracking-tight text-white leading-tight font-sporty">
-                  {promoData.title}
+                <h2 className="text-[1.65rem] sm:text-4xl lg:text-5xl font-black mb-6 tracking-tight text-white leading-tight font-sporty">
+                  {promoData.title ? promoData.title.replace(/\s+([^\s]+)$/, '\u00A0$1') : ''}
                 </h2>
                 
                 <p className="text-base sm:text-lg text-zinc-300 mb-8 leading-relaxed whitespace-pre-line font-sans font-normal">
