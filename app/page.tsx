@@ -7,7 +7,14 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Pagination } from 'swiper/modules'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Sparkles, Paintbrush, Wrench, ChevronLeft, ChevronRight, CheckCircle2, Volume2, VolumeX } from "lucide-react"
+import { ChevronLeft, ChevronRight, Volume2, VolumeX } from "lucide-react"
+import { HeroSection, HeroSubtitle } from '@/components/landing/HeroSection'
+import { GsapStat } from '@/components/landing/GsapStat'
+import { WhyChooseSection } from '@/components/landing/WhyChooseSection'
+import { GsapSectionHeader } from '@/components/landing/GsapSection'
+import { SectionBackdrop } from '@/components/landing/SectionBackdrop'
+import { useGsapReveal } from '@/hooks/useGsapReveal'
+import { ScrollTrigger, registerGsap } from '@/lib/gsap/register'
 import { toast } from 'sonner'
 import Marquee from 'react-fast-marquee'
 
@@ -23,46 +30,6 @@ import { sortPortfolioNewestFirst } from '@/lib/portfolio'
 import { getYouTubeId } from '@/lib/youtube'
 
 
-
-const AnimatedCounter = ({ value, suffix = "" }: { value: number; suffix?: string }) => {
-  const [count, setCount] = useState(value)
-
-  useEffect(() => {
-    let start = 0
-    const end = value
-    setCount(0)
-
-    const duration = 1500
-    const increment = end / (duration / 16)
-    
-    const timer = setInterval(() => {
-      start += increment
-      if (start >= end) {
-        setCount(end)
-        clearInterval(timer)
-      } else {
-        setCount(start)
-      }
-    }, 16)
-
-    return () => clearInterval(timer)
-  }, [value])
-
-  const isDecimal = value % 1 !== 0
-
-  return (
-    <span>
-      {isDecimal ? count.toFixed(1) : Math.floor(count)}
-      {suffix}
-    </span>
-  )
-}
-
-const subtitles = [
-  'body repair & dempul',
-  'cat spray booth & repaint',
-  'detailing & coating',
-]
 
 interface Testimonial {
   message: string;
@@ -81,8 +48,20 @@ interface Portfolio {
 export default function Home() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [partnerLogos, setPartnerLogos] = useState<{ src: string; alt: string }[]>([])
-  const [subtitleIndex, setSubtitleIndex] = useState(0)
   const [selectedImg, setSelectedImg] = useState<string | null>(null)
+  const subtitleRef = useRef<HTMLSpanElement>(null)
+  const portfolioSectionRef = useRef<HTMLElement>(null)
+  const portfolioContentRef = useRef<HTMLDivElement>(null)
+  const promoSectionRef = useRef<HTMLElement>(null)
+  const promoContentRef = useRef<HTMLDivElement>(null)
+  const testimonialSectionRef = useRef<HTMLElement>(null)
+  const testimonialHeaderRef = useRef<HTMLDivElement>(null)
+  const faqSectionRef = useRef<HTMLElement>(null)
+  const faqContentRef = useRef<HTMLDivElement>(null)
+  const newsletterSectionRef = useRef<HTMLElement>(null)
+  const newsletterContentRef = useRef<HTMLDivElement>(null)
+  const logoSectionRef = useRef<HTMLElement>(null)
+  const logoContentRef = useRef<HTMLDivElement>(null)
   const [portfolioImages, setPortfolioImages] = useState<Portfolio[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [email, setEmail] = useState<string>("")
@@ -229,13 +208,29 @@ export default function Home() {
     return () => unsub()
   }, [])
 
-  // Ganti subtitle otomatis
+  useGsapReveal(logoContentRef, '.gsap-reveal', { trigger: logoSectionRef, variant: 'fadeUp' })
+  useGsapReveal(portfolioContentRef, '.gsap-reveal', { trigger: portfolioSectionRef, variant: 'fadeUp', stagger: 0.08 })
+  useGsapReveal(promoContentRef, '.gsap-reveal', { trigger: promoSectionRef, variant: 'scale', stagger: 0.12 })
+  useGsapReveal(testimonialHeaderRef, '.gsap-reveal', { trigger: testimonialSectionRef, variant: 'blur' })
+  useGsapReveal(faqContentRef, '.gsap-reveal-faq', { trigger: faqSectionRef, variant: 'fadeLeft', stagger: 0.1 })
+  useGsapReveal(newsletterContentRef, '.gsap-reveal', { trigger: newsletterSectionRef, variant: 'fadeUp', stagger: 0.1 })
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setSubtitleIndex((prev) => (prev + 1) % subtitles.length)
-    }, 4500)
-    return () => clearInterval(interval)
+    registerGsap()
+    const refresh = () => ScrollTrigger.refresh()
+    window.addEventListener('load', refresh)
+    window.addEventListener('resize', refresh)
+    return () => {
+      window.removeEventListener('load', refresh)
+      window.removeEventListener('resize', refresh)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!isLoading) {
+      ScrollTrigger.refresh()
+    }
+  }, [isLoading, portfolioImages.length])
 
   const updateSwiperNavigation = useCallback((swiper: any) => {
     requestAnimationFrame(() => {
@@ -362,68 +357,56 @@ export default function Home() {
 
   return (
     <div className="bg-[#f8f9fa] text-gray-900 overflow-x-hidden min-h-screen">
-      {/* Hero — min-h + svh (bukan dvh) agar tinggi stabil saat scroll mobile */}
-      <section className="section-full-width relative flex items-center min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-6rem)] py-4 sm:py-6">
-        <div className="container mx-auto px-4 md:px-12 w-full grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 md:gap-12 items-center relative z-10">
+      <HeroSection subtitleRef={subtitleRef}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 md:gap-12 items-center">
           {/* Text */}
           <div className="flex flex-col items-center text-center md:items-start md:text-left justify-center">
-            <div className="inline-flex items-center bg-gray-950 text-white px-3.5 py-1.5 rounded-lg border border-gray-800 shadow-md mb-4 sm:mb-5 gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-widest select-none">
+            <div className="gsap-hero-item inline-flex items-center bg-gray-950 text-white px-3.5 py-1.5 rounded-lg border border-gray-800 shadow-md mb-4 sm:mb-5 gap-1.5 text-[10px] sm:text-xs font-black uppercase tracking-widest select-none">
               <span className="text-gray-400 font-sans">One-Stop</span>
               <span className="text-white font-sans">Auto Body Care</span>
             </div>
             
-            <h1 className="mb-4 sm:mb-5 text-[1.75rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-black font-sporty text-gray-900 tracking-tighter">
+            <h1 className="gsap-hero-item mb-4 sm:mb-5 text-[1.75rem] leading-[1.15] sm:text-4xl md:text-5xl lg:text-6xl font-black font-sporty text-gray-900 tracking-tighter">
               <span className="text-red-600">HYPERMILE</span> <br />
               AUTO BODY <br />
               WORKS
             </h1>
             
-            <div className="mb-3 sm:mb-4">
+            <div className="gsap-hero-item mb-3 sm:mb-4">
               <div className="flex flex-wrap items-baseline justify-center md:justify-start gap-x-1.5 text-sm sm:text-base leading-normal">
                 <span className="text-gray-600">Bengkel spesialis</span>
                 <span className="relative inline-block text-red-600 font-semibold">
                   <span className="invisible whitespace-nowrap select-none" aria-hidden="true">
                     detailing & coating
                   </span>
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={subtitleIndex}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.5, ease: 'easeInOut' }}
-                      className="absolute left-0 top-0 whitespace-nowrap"
-                    >
-                      {subtitles[subtitleIndex]}
-                    </motion.span>
-                  </AnimatePresence>
+                  <HeroSubtitle subtitleRef={subtitleRef} />
                 </span>
               </div>
             </div>
             
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-x-2 md:gap-x-6 w-full text-center md:text-left border-t border-gray-200/60 pt-4 sm:pt-5 mt-0">
+            <div className="gsap-hero-item grid grid-cols-4 gap-x-2 md:gap-x-6 w-full text-center md:text-left border-t border-gray-200/60 pt-4 sm:pt-5 mt-0">
               <div>
                 <p className="text-lg sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-                  <AnimatedCounter value={2000} suffix="+" />
+                  <GsapStat value={2000} suffix="+" />
                 </p>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">Pelanggan</p>
               </div>
               <div>
                 <p className="text-lg sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-                  <AnimatedCounter value={4000} suffix="+" />
+                  <GsapStat value={4000} suffix="+" />
                 </p>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">Kendaraan</p>
               </div>
               <div>
                 <p className="text-lg sm:text-2xl md:text-3xl font-black text-red-600 tracking-tight">
-                  <AnimatedCounter value={99} suffix="%" />
+                  <GsapStat value={99} suffix="%" />
                 </p>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">Kepuasan</p>
               </div>
               <div>
                 <p className="text-lg sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
-                  <AnimatedCounter value={2.1} suffix="x" />
+                  <GsapStat value={2.1} suffix="x" decimals={1} />
                 </p>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 font-bold uppercase tracking-wider mt-2 whitespace-nowrap">Repeat Order</p>
               </div>
@@ -431,15 +414,12 @@ export default function Home() {
           </div>
 
           {/* Hero Video / Image */}
-          <div className="relative w-full flex justify-center md:justify-end items-center mt-6 md:mt-0">
-            <div className="relative w-full max-w-[500px] lg:max-w-[540px] aspect-video group">
-              {/* Artisanal dotted border offset */}
+          <div className="gsap-hero-item relative w-full flex justify-center md:justify-end items-center mt-6 md:mt-0">
+            <div className="relative w-full max-w-[500px] lg:max-w-[540px] aspect-video group landing-shine">
               <div className="absolute -inset-3 border-2 border-dashed border-red-600/60 rounded-[32px] transition-all duration-500 group-hover:-inset-1.5" />
               
-              {/* Media Container with solid borders */}
               <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-gray-900 shadow-2xl bg-black transition-transform duration-500">
                 {heroVideoUrl === null ? (
-                  // Loading state: black background with spinner
                   <div className="absolute inset-0 bg-black flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
                   </div>
@@ -470,41 +450,45 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </HeroSection>
 
       {/* Logo Cloud Section */}
-      <section className="section-full-width py-12 relative bg-[#f8f9fa] border-b border-gray-200/50">
-        <div className="container mx-auto px-4 md:px-12 relative max-w-3xl">
-          <h2 className="mb-5 text-center font-bold text-foreground text-xl tracking-tight md:text-2xl lg:text-3xl font-sans">
+      <section ref={logoSectionRef} className="section-full-width py-12 relative overflow-hidden border-b border-gray-200/50">
+        <SectionBackdrop variant="grid" />
+        <div ref={logoContentRef} className="container mx-auto px-4 md:px-12 relative max-w-3xl z-10">
+          <h2 className="gsap-reveal mb-5 text-center font-bold text-foreground text-xl tracking-tight md:text-2xl lg:text-3xl font-sans">
             <span className="text-muted-foreground font-normal">Dipercaya oleh</span>{" "}
             <span className="font-extrabold font-sporty text-gray-900">Brand & Partner Otomotif Terkemuka</span>
             <span className="text-red-600">.</span>
           </h2>
-          <div className="mx-auto my-5 h-px max-w-sm bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
+          <div className="gsap-reveal mx-auto my-5 h-px max-w-sm bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
 
-          <LogoCloud logos={partnerLogos} />
+          <div className="gsap-reveal">
+            <LogoCloud logos={partnerLogos} />
+          </div>
 
-          <div className="mt-5 h-px bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
+          <div className="gsap-reveal mt-5 h-px bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
         </div>
       </section>
 
       {/* Portfolio Section */}
-      <section className="section-full-width py-12 relative bg-[#f8f9fa]">
-        <div className="container mx-auto px-4 md:px-12">
+      <section ref={portfolioSectionRef} className="section-full-width py-12 relative overflow-hidden">
+        <SectionBackdrop variant="mesh" />
+        <div ref={portfolioContentRef} className="container mx-auto px-4 md:px-12 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
             <div className="max-w-2xl text-left">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+              <span className="gsap-reveal text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
                 Galeri Portofolio
               </span>
-              <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+              <h2 className="gsap-reveal text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
                 Masterpiece Hypermile<span className="text-red-600">.</span>
               </h2>
-              <p className="text-gray-600 text-sm md:text-base mt-4 leading-relaxed font-normal">
+              <p className="gsap-reveal text-gray-600 text-sm md:text-base mt-4 leading-relaxed font-normal">
                 Galeri hasil karya terbaik kami. Mulai dari pengerjaan body repair presisi, pengecatan menggunakan spray booth profesional, hingga detailing mendalam yang mengembalikan kilau sempurna mobil Anda.
               </p>
             </div>
             {homePortfolio.length > 1 && (
-              <div className="flex gap-3 mt-6 md:mt-0">
+              <div className="gsap-reveal flex gap-3 mt-6 md:mt-0">
                 <button
                   ref={prevRef}
                   aria-label="Sebelumnya"
@@ -557,7 +541,7 @@ export default function Home() {
                 {homePortfolio.map((img, index) => (
                   <SwiperSlide key={img.id}>
                     <div
-                      className="cursor-pointer group relative aspect-[4/5] overflow-hidden rounded-2xl border border-gray-200 shadow-md bg-white"
+                      className="cursor-pointer group relative aspect-[4/5] overflow-hidden rounded-2xl border border-gray-200 shadow-md bg-white/80 backdrop-blur-sm"
                       onClick={() => setSelectedImg(img.url)}
                     >
                       <Image
@@ -627,16 +611,16 @@ export default function Home() {
       </section>
 
       {/* Promo & News Section (PPG Refinique Certification) */}
-      <section className="section-full-width py-16 bg-[#f8f9fa] border-t border-gray-200/50">
-        <div className="container mx-auto px-4 md:px-12">
-          <div className="bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-8 md:p-12 lg:p-16 shadow-2xl border border-zinc-800">
+      <section ref={promoSectionRef} className="section-full-width py-16 relative overflow-hidden border-t border-gray-200/50">
+        <SectionBackdrop variant="carbon" />
+        <div ref={promoContentRef} className="container mx-auto px-4 md:px-12 relative z-10">
+          <div className="gsap-reveal bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-8 md:p-12 lg:p-16 shadow-2xl border border-zinc-800 landing-shine">
             <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl" />
             <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
             
             <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              {/* Image Collage / Poster */}
               {promoData.imageUrl && (
-                <div className="lg:col-span-5 w-full flex justify-center">
+                <div className="gsap-reveal lg:col-span-5 w-full flex justify-center">
                   <div className="relative w-full max-w-sm aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
                     <Image
                       src={promoData.imageUrl}
@@ -650,8 +634,7 @@ export default function Home() {
                 </div>
               )}
               
-              {/* Content Details */}
-              <div className={promoData.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
+              <div className={promoData.imageUrl ? "gsap-reveal lg:col-span-7 flex flex-col items-start text-left" : "gsap-reveal lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
                 {promoData.badge && (
                   <span className="text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-1.5 rounded-full font-sans mb-5 inline-block">
                     {promoData.badge}
@@ -686,18 +669,19 @@ export default function Home() {
       
       {/* Testimonials Section */}
       {testimonials.length > 0 && (
-        <section className="section-full-width py-24 text-center relative bg-[#f8f9fa] no-scroll-y border-t border-gray-200">
-          <div className="container mx-auto px-4 mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+        <section ref={testimonialSectionRef} className="section-full-width py-24 text-center relative overflow-hidden border-t border-gray-200">
+          <SectionBackdrop variant="spotlight" />
+          <div ref={testimonialHeaderRef} className="container mx-auto px-4 mb-16 relative z-10">
+            <span className="gsap-reveal text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
               Testimoni Pelanggan
             </span>
-            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
+            <h2 className="gsap-reveal text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
               Apa Kata Pemilik Kendaraan<span className="text-red-600">.</span>
             </h2>
           </div>
 
           {/* Desktop - Marquee */}
-          <div className="hidden md:block w-full testimonial-wrapper">
+          <div className="hidden md:block w-full relative z-10">
             <Marquee
               speed={35}
               gradient
@@ -719,7 +703,7 @@ export default function Home() {
           </div>
 
           {/* Mobile - Swiper */}
-          <div className="block md:hidden px-4 testimonial-wrapper">
+          <div className="block md:hidden px-4 relative z-10">
             <Swiper
               modules={[Pagination]}
               spaceBetween={16}
@@ -744,71 +728,16 @@ export default function Home() {
         </section>
       )}
 
-      {/* Why Choose Us Section */}
-      <section className="section-full-width py-24 bg-[#f8f9fa] border-t border-gray-200">
-        <div className="container mx-auto px-4 md:px-12">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
-              Keunggulan Kami
-            </span>
-            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
-              Mengapa Memilih Hypermile<span className="text-red-600">.</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Paintbrush className="h-6 w-6 text-red-600" />,
-                title: "Fasilitas Spray Booth",
-                desc: "Didukung fasilitas spray booth modern untuk hasil pengecatan yang bersih, merata, dan bebas debu.",
-                bg: "bg-white shadow-sm"
-              },
-              {
-                icon: <CheckCircle2 className="h-6 w-6 text-red-600" />,
-                title: "Teknisi Berlisensi",
-                desc: "Dikerjakan oleh teknisi berpengalaman dan bersertifikasi untuk memastikan kualitas pengerjaan terbaik.",
-                bg: "bg-white shadow-sm"
-              },
-              {
-                icon: <Sparkles className="h-6 w-6 text-red-600" />,
-                title: "Bahan Premium",
-                desc: "Menggunakan cat dan material berkualitas tinggi untuk hasil yang kuat, tahan lama, dan sesuai standar.",
-                bg: "bg-white shadow-sm"
-              },
-              {
-                icon: <Shield className="h-6 w-6 text-red-600" />,
-                title: "Garansi 1 Tahun",
-                desc: "Garansi hingga 1 tahun untuk layanan body repair dan body repaint sebagai jaminan kualitas pekerjaan.",
-                bg: "bg-white shadow-sm"
-              }
-            ].map((item, idx) => (
-              <div
-                key={idx}
-                className={`p-6 rounded-2xl border border-gray-200 hover:border-red-600/20 transition-all duration-300 ${item.bg}`}
-              >
-                <div className="p-3 w-fit rounded-xl bg-red-50 mb-4">
-                  {item.icon}
-                </div>
-                <h4 className="text-lg font-bold mb-2 text-gray-900">{item.title}</h4>
-                <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <WhyChooseSection />
 
       {/* FAQ Section */}
-      <section className="section-full-width py-24 bg-[#f8f9fa] border-t border-gray-200">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="text-center mb-16">
-            <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
-              FAQ
-            </span>
-            <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 text-gray-900 leading-tight">
-              Pertanyaan Umum<span className="text-red-600">.</span>
-            </h2>
-          </div>
+      <section ref={faqSectionRef} className="section-full-width py-24 relative overflow-hidden border-t border-gray-200">
+        <SectionBackdrop variant="grid" />
+        <div ref={faqContentRef} className="container mx-auto px-4 max-w-3xl relative z-10">
+          <GsapSectionHeader
+            badge="FAQ"
+            title={<>Pertanyaan Umum<span className="text-red-600">.</span></>}
+          />
           
           <div className="space-y-4">
             {[
@@ -825,7 +754,7 @@ export default function Home() {
                 a: "Saat ini kami fokus melayani perbaikan umum non-asuransi (pribadi), restorasi total, dan modifikasi bodi. Untuk informasi kemitraan asuransi tertentu, silakan langsung diskusikan dengan tim kami via WhatsApp."
               }
             ].map((faq, idx) => (
-              <div key={idx} className="p-6 bg-white shadow-sm rounded-2xl border border-gray-200">
+              <div key={idx} className="gsap-reveal-faq p-6 bg-white/80 backdrop-blur-sm shadow-sm rounded-2xl border border-gray-200 hover:border-red-500/20 transition-colors duration-300">
                 <h4 className="font-bold text-gray-900 text-base md:text-lg mb-2">{faq.q}</h4>
                 <p className="text-gray-600 text-sm leading-relaxed">{faq.a}</p>
               </div>
@@ -835,18 +764,20 @@ export default function Home() {
       </section>
 
       {/* Newsletter Section */}
-      <section className="section-full-width py-20 bg-[#f8f9fa] text-center px-4 border-t border-gray-200">
-        <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
-          Newsletter
-        </span>
-        <h2 className="text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 mb-4 text-gray-900 leading-tight">
-          Gabung ke Newsletter Kami<span className="text-red-600">.</span>
-        </h2>
-        <p className="mb-8 text-gray-600 text-sm md:text-base max-w-lg mx-auto leading-relaxed">
-          Dapatkan tips berkala merawat cat mobil agar tetap mengkilap, info promo khusus bulanan, dan update terbaru langsung ke inbox Anda.
-        </p>
-        <form
-          className="flex justify-center gap-2 flex-wrap max-w-sm mx-auto"
+      <section ref={newsletterSectionRef} className="section-full-width py-20 text-center px-4 relative overflow-hidden border-t border-gray-200">
+        <SectionBackdrop variant="mesh" />
+        <div ref={newsletterContentRef} className="relative z-10 max-w-lg mx-auto">
+          <span className="gsap-reveal text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
+            Newsletter
+          </span>
+          <h2 className="gsap-reveal text-3xl md:text-5xl font-extrabold font-sporty tracking-tight mt-4 mb-4 text-gray-900 leading-tight">
+            Gabung ke Newsletter Kami<span className="text-red-600">.</span>
+          </h2>
+          <p className="gsap-reveal mb-8 text-gray-600 text-sm md:text-base leading-relaxed">
+            Dapatkan tips berkala merawat cat mobil agar tetap mengkilap, info promo khusus bulanan, dan update terbaru langsung ke inbox Anda.
+          </p>
+          <form
+            className="gsap-reveal flex justify-center gap-2 flex-wrap max-w-sm mx-auto"
           onSubmit={e => {
             e.preventDefault();
             handleSubscribe();
@@ -867,6 +798,7 @@ export default function Home() {
             Subscribe
           </button>
         </form>
+        </div>
       </section>
     </div>
   )
