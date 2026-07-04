@@ -253,7 +253,6 @@ const nextConfig = {
     optimizePackageImports: [
       'lucide-react',
       'framer-motion',
-      'gsap',
       'swiper',
       'firebase',
       '@firebase/firestore',
