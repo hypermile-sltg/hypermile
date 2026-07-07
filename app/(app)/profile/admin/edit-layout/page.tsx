@@ -98,6 +98,11 @@ export default function EditLayoutPage() {
   const [promoButtonText, setPromoButtonText] = useState<string>('Hubungi Admin WA')
   const [promoButtonUrl, setPromoButtonUrl] = useState<string>('https://wa.me/6285900472233')
 
+  // Social media settings states
+  const [instagramUrl, setInstagramUrl] = useState<string>('https://www.instagram.com/hypermile_salatiga')
+  const [tiktokUrl, setTiktokUrl] = useState<string>('https://www.tiktok.com/@hypermileofficial')
+  const [youtubeUrl, setYoutubeUrl] = useState<string>('https://www.youtube.com/@hypermileautobodyworks')
+
   const fetchSettings = async () => {
     setLoadingSettings(true)
     try {
@@ -119,6 +124,16 @@ export default function EditLayoutPage() {
         setPromoImageUrl(data.imageUrl !== undefined ? data.imageUrl : '')
         setPromoButtonText(data.buttonText !== undefined ? data.buttonText : '')
         setPromoButtonUrl(data.buttonUrl !== undefined ? data.buttonUrl : '')
+      }
+
+      // Fetch Social settings
+      const socialsRef = doc(db, 'settings', 'socials')
+      const socialsSnap = await getDoc(socialsRef)
+      if (socialsSnap.exists()) {
+        const data = socialsSnap.data()
+        setInstagramUrl(data.instagram !== undefined ? data.instagram : 'https://www.instagram.com/hypermile_salatiga')
+        setTiktokUrl(data.tiktok !== undefined ? data.tiktok : 'https://www.tiktok.com/@hypermileofficial')
+        setYoutubeUrl(data.youtube !== undefined ? data.youtube : 'https://www.youtube.com/@hypermileautobodyworks')
       }
     } catch (error) {
       console.error('Error fetching settings:', error)
@@ -153,6 +168,18 @@ export default function EditLayoutPage() {
           imageUrl: promoImageUrl.trim(),
           buttonText: promoButtonText.trim(),
           buttonUrl: promoButtonUrl.trim(),
+        },
+      })
+
+      // Save Social details
+      await adminFirestoreWrite({
+        collection: 'settings',
+        action: 'update',
+        id: 'socials',
+        data: {
+          instagram: instagramUrl.trim(),
+          tiktok: tiktokUrl.trim(),
+          youtube: youtubeUrl.trim(),
         },
       })
       toast.success('Pengaturan berhasil diperbarui!')
@@ -912,6 +939,40 @@ export default function EditLayoutPage() {
                       placeholder="https://wa.me/xxx"
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* SOCIAL MEDIA SETTINGS */}
+            {!loadingSettings && (
+              <div className="space-y-4 max-w-2xl border-t pt-6">
+                <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Pengaturan Sosial Media</h3>
+                
+                <div>
+                  <label className="block mb-2 font-medium text-sm text-gray-700">Instagram Link</label>
+                  <Input
+                    value={instagramUrl}
+                    onChange={(e) => setInstagramUrl(e.target.value)}
+                    placeholder="https://www.instagram.com/username"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-sm text-gray-700">TikTok Link</label>
+                  <Input
+                    value={tiktokUrl}
+                    onChange={(e) => setTiktokUrl(e.target.value)}
+                    placeholder="https://www.tiktok.com/@username"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-sm text-gray-700">YouTube Link</label>
+                  <Input
+                    value={youtubeUrl}
+                    onChange={(e) => setYoutubeUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/@channel"
+                  />
                 </div>
               </div>
             )}

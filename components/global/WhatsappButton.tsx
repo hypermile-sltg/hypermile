@@ -4,14 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ArrowUp } from 'lucide-react'
-import { FaInstagram, FaTiktok } from 'react-icons/fa'
+import { FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa'
 import Image from 'next/image'
 import contactUsIcon from '@/public/contactus.svg'
+import { db } from '@/lib/firebase'
+import { doc, onSnapshot } from 'firebase/firestore'
 
 export default function WhatsAppButton() {
   const pathname = usePathname()
   const [isAdminPage, setIsAdminPage] = useState(false)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [socials, setSocials] = useState({
+    instagram: 'https://www.instagram.com/hypermile_salatiga',
+    tiktok: 'https://www.tiktok.com/@hypermileofficial',
+    youtube: 'https://www.youtube.com/@hypermileautobodyworks',
+  })
 
   useEffect(() => {
     setIsAdminPage(pathname ? pathname.startsWith('/profile/admin') : false)
@@ -23,6 +30,26 @@ export default function WhatsAppButton() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, 'settings', 'socials'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data()
+          setSocials({
+            instagram: data.instagram || 'https://www.instagram.com/hypermile_salatiga',
+            tiktok: data.tiktok || 'https://www.tiktok.com/@hypermileofficial',
+            youtube: data.youtube || 'https://www.youtube.com/@hypermileautobodyworks',
+          })
+        }
+      },
+      (err) => {
+        console.error('Error fetching socials in WhatsappButton:', err)
+      }
+    )
+    return () => unsub()
+  }, [])
+
   if (isAdminPage) return null
 
   return (
@@ -30,7 +57,7 @@ export default function WhatsAppButton() {
       {/* Social Media Pill — top right */}
       <div className="fixed top-[80px] right-4 z-40 flex flex-col gap-2">
         <a
-          href="https://www.tiktok.com/@hypermileofficial"
+          href={socials.tiktok}
           target="_blank"
           rel="noopener noreferrer"
           className="bg-black p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
@@ -39,13 +66,22 @@ export default function WhatsAppButton() {
           <FaTiktok className="text-white w-5 h-5" />
         </a>
         <a
-          href="https://www.instagram.com/hypermile_salatiga"
+          href={socials.instagram}
           target="_blank"
           rel="noopener noreferrer"
           className="bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
           aria-label="Instagram"
         >
           <FaInstagram className="text-white w-5 h-5" />
+        </a>
+        <a
+          href={socials.youtube}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-red-600 p-3 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center"
+          aria-label="YouTube"
+        >
+          <FaYoutube className="text-white w-5 h-5" />
         </a>
       </div>
 

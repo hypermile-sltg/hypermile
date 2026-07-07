@@ -1,13 +1,42 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { FaTiktok, FaInstagram } from "react-icons/fa";
+import { FaTiktok, FaInstagram, FaYoutube } from "react-icons/fa";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const Footer = () => {
   const pathname = usePathname();
   const router = useRouter();
+
+  const [socials, setSocials] = useState({
+    instagram: "https://www.instagram.com/hypermile_salatiga",
+    tiktok: "https://www.tiktok.com/@hypermileofficial",
+    youtube: "https://www.youtube.com/@hypermileautobodyworks",
+  });
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      doc(db, "settings", "socials"),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setSocials({
+            instagram: data.instagram || "https://www.instagram.com/hypermile_salatiga",
+            tiktok: data.tiktok || "https://www.tiktok.com/@hypermileofficial",
+            youtube: data.youtube || "https://www.youtube.com/@hypermileautobodyworks",
+          });
+        }
+      },
+      (err) => {
+        console.error("Error fetching socials in Footer:", err);
+      }
+    );
+    return () => unsub();
+  }, []);
 
   const handleLogoClick = () => {
     if (pathname !== "/") {
@@ -20,17 +49,24 @@ const Footer = () => {
   const socialMedia = [
     {
       icon: FaTiktok,
-      href: "https://www.tiktok.com/@hypermile",
+      href: socials.tiktok,
       color: "hover:bg-black hover:text-white",
       bg: "bg-black border border-white/10",
       name: "TikTok",
     },
     {
       icon: FaInstagram,
-      href: "https://www.instagram.com/hypermile",
+      href: socials.instagram,
       color: "hover:bg-pink-600 hover:text-white",
       bg: "bg-gradient-to-r from-purple-500 to-pink-500",
       name: "Instagram",
+    },
+    {
+      icon: FaYoutube,
+      href: socials.youtube,
+      color: "hover:bg-red-600 hover:text-white",
+      bg: "bg-red-600 border border-white/10",
+      name: "YouTube",
     },
   ];
 
