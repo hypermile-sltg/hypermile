@@ -19,9 +19,18 @@ import 'swiper/css/pagination'
 import { db } from '../lib/firebase'
 import { collection, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore'
 import { LogoCloud } from '@/components/ui/logo-cloud-3'
+import {
+  HeroMediaSkeleton,
+  PartnersSkeleton,
+  PortfolioSlideSkeleton,
+  PromoCardSkeleton,
+  TestimonialSkeleton,
+} from '@/components/ui/skeleton'
 import { sortPortfolioNewestFirst } from '@/lib/portfolio'
 import { getYouTubeId } from '@/lib/youtube'
 import { getVideoEmbedUrl, getVideoType, getVideoThumbnail, isEmbeddable } from '@/lib/video'
+import { PROMO_SECTION_ID } from '@/lib/promo-navigation'
+import { useRestorePromoSection } from '@/hooks/useRestorePromoSection'
 
 
 
@@ -105,7 +114,13 @@ export default function Home() {
 
   const [promos, setPromos] = useState<PromoItem[]>([])
   const [fallbackPromo, setFallbackPromo] = useState<PromoItem | null>(null)
+  const [loadingPromosCol, setLoadingPromosCol] = useState(true)
+  const [loadingFallbackPromo, setLoadingFallbackPromo] = useState(true)
+  const [loadingPartners, setLoadingPartners] = useState(true)
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true)
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
+  const loadingPromos = loadingPromosCol || loadingFallbackPromo
+  const homeVisible = useRestorePromoSection(!loadingPromos)
 
   const toggleMute = () => {
     if (!iframeRef.current) return
@@ -163,10 +178,12 @@ export default function Home() {
         })
 
         setPromos(data)
+        setLoadingPromosCol(false)
       },
       (error) => {
         console.error("Error fetching promos collection:", error)
         setPromos([])
+        setLoadingPromosCol(false)
       }
     )
     return () => unsub()
@@ -189,9 +206,11 @@ export default function Home() {
             buttonUrl: data.buttonUrl || ''
           })
         }
+        setLoadingFallbackPromo(false)
       },
       (error) => {
         console.error("Error fetching fallback promo:", error)
+        setLoadingFallbackPromo(false)
       }
     )
     return () => unsub()
@@ -235,10 +254,12 @@ export default function Home() {
       (snapshot) => {
         const data = snapshot.docs.map((doc) => doc.data() as Testimonial)
         setTestimonials(data)
+        setLoadingTestimonials(false)
       },
       (error) => {
         console.error("Error fetching testimonials:", error)
         setTestimonials([])
+        setLoadingTestimonials(false)
       }
     )
     return () => unsub();
@@ -260,10 +281,12 @@ export default function Home() {
           return timeB - timeA
         })
         setPartnerLogos(data)
+        setLoadingPartners(false)
       },
       (error) => {
         console.error("Error fetching partners:", error)
         setPartnerLogos([])
+        setLoadingPartners(false)
       }
     )
     return () => unsub()
@@ -401,7 +424,11 @@ export default function Home() {
   );
 
   return (
-    <div className="bg-[#f8f9fa] text-gray-900 overflow-x-hidden min-h-screen">
+    <div
+      className={`bg-[#f8f9fa] text-gray-900 overflow-x-hidden min-h-screen ${
+        homeVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
       {/* Hero — min-h + svh (bukan dvh) agar tinggi stabil saat scroll mobile */}
       <section className="section-full-width relative flex items-center min-h-[calc(100svh-5rem)] md:min-h-[calc(100svh-6rem)] py-4 sm:py-6">
         <div className="container mx-auto px-4 md:px-12 w-full grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 md:gap-12 items-center relative z-10">
@@ -479,10 +506,7 @@ export default function Home() {
               {/* Media Container with solid borders */}
               <div className="absolute inset-0 rounded-3xl overflow-hidden border-2 border-gray-900 shadow-2xl bg-black transition-transform duration-500">
                 {heroVideoUrl === null ? (
-                  // Loading state: black background with spinner
-                  <div className="absolute inset-0 bg-black flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                  </div>
+                  <HeroMediaSkeleton />
                 ) : getYouTubeId(heroVideoUrl) ? (
                   <>
                     <iframe
@@ -522,7 +546,11 @@ export default function Home() {
           </h2>
           <div className="mx-auto my-5 h-px max-w-sm bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
 
-          <LogoCloud logos={partnerLogos} />
+          {loadingPartners ? (
+            <PartnersSkeleton />
+          ) : (
+            <LogoCloud logos={partnerLogos} />
+          )}
 
           <div className="mt-5 h-px bg-gray-200 [mask-image:linear-gradient(to_right,transparent,black,transparent)]" />
         </div>
@@ -564,9 +592,7 @@ export default function Home() {
           </div>
 
           {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-600"></div>
-            </div>
+            <PortfolioSlideSkeleton />
           ) : homePortfolio.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-500">
               Belum ada foto portfolio.
@@ -735,9 +761,11 @@ export default function Home() {
       </section>
 
       {/* Promo & News Section (PPG Refinique Certification) */}
-      <section className="section-full-width py-8 md:py-16 bg-[#f8f9fa] border-t border-gray-200/50">
+      <section id={PROMO_SECTION_ID} className="section-full-width py-8 md:py-16 bg-[#f8f9fa] border-t border-gray-200/50 scroll-mt-24">
         <div className="container mx-auto px-4 md:px-12">
-          {(() => {
+          {loadingPromos ? (
+            <PromoCardSkeleton />
+          ) : (() => {
             const activePromos = promos.length > 0
               ? promos
               : fallbackPromo
@@ -759,28 +787,30 @@ export default function Home() {
               >
                 {activePromos.map((promo) => (
                   <SwiperSlide key={promo.id} className="!h-auto flex">
-                    <div className="bg-zinc-950 text-white rounded-2xl md:rounded-3xl relative overflow-hidden p-4 sm:p-6 md:p-10 lg:p-12 border border-zinc-800 w-full h-full flex flex-col justify-center">
+                    <Link
+                      href={`/promo/${promo.id}`}
+                      scroll
+                      className="bg-zinc-950 text-white rounded-2xl md:rounded-3xl relative overflow-hidden p-4 sm:p-6 md:p-10 lg:p-12 border border-zinc-800 w-full h-full flex flex-col justify-center group/card transition-colors hover:border-zinc-600"
+                    >
                       <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
                       <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                       
                       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
-                        {/* Image Collage / Poster */}
                         {promo.imageUrl && promo.imageUrl.trim() !== '' && promo.imageUrl.trim() !== '/' && (
                           <div className="lg:col-span-5 w-full flex justify-center">
-                            <div className="relative w-full max-w-none sm:max-w-[280px] aspect-[16/9] sm:aspect-square lg:aspect-[4/5] rounded-xl md:rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
+                            <div className="relative w-full max-w-none sm:max-w-[280px] aspect-[16/9] sm:aspect-square lg:aspect-[4/5] rounded-xl md:rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 bg-zinc-900">
                               <Image
                                 src={promo.imageUrl}
                                 alt={promo.title}
                                 fill
                                 sizes="(max-width: 640px) 100vw, 300px"
-                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                className="object-cover group-hover/card:scale-105 transition-transform duration-500"
                                 unoptimized
                               />
                             </div>
                           </div>
                         )}
                         
-                        {/* Content Details */}
                         <div className={promo.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
                           {promo.badge && (
                             <span className="text-[10px] sm:text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full font-sans mb-2 sm:mb-4 inline-block">
@@ -792,25 +822,16 @@ export default function Home() {
                             {promo.title ? promo.title.replace(/\s+([^\s]+)$/, '\u00A0$1') : ''}
                           </h2>
                           
-                          <p className="text-xs sm:text-base text-zinc-300 mb-3 sm:mb-6 leading-relaxed whitespace-pre-line font-sans font-normal line-clamp-3 sm:line-clamp-none">
+                          <p className="text-xs sm:text-base text-zinc-300 mb-3 sm:mb-6 leading-relaxed font-sans font-normal line-clamp-2 sm:line-clamp-3">
                             {promo.description}
                           </p>
                           
-                          <div className="flex flex-wrap gap-3 sm:gap-4">
-                            {promo.buttonText && promo.buttonUrl && (
-                              <a
-                                href={promo.buttonUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-lg sm:rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                              >
-                                {promo.buttonText}
-                              </a>
-                            )}
-                          </div>
+                          <span className="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm bg-red-600 group-hover/card:bg-red-700 text-white font-extrabold rounded-lg sm:rounded-xl shadow-xl transition-colors">
+                            Baca selengkapnya
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </SwiperSlide>
                 ))}
               </Swiper>
@@ -820,7 +841,11 @@ export default function Home() {
       </section>
       
       {/* Testimonials Section */}
-      {testimonials.length > 0 && (
+      {loadingTestimonials ? (
+        <section className="section-full-width relative bg-[#f8f9fa] no-scroll-y border-t border-gray-200">
+          <TestimonialSkeleton />
+        </section>
+      ) : testimonials.length > 0 && (
         <section className="section-full-width py-24 text-center relative bg-[#f8f9fa] no-scroll-y border-t border-gray-200">
           <div className="container mx-auto px-4 mb-16">
             <span className="text-xs uppercase font-extrabold tracking-widest text-red-600 bg-red-100/50 px-3.5 py-1.5 rounded-full font-sans inline-block">
