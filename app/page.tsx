@@ -735,7 +735,7 @@ export default function Home() {
       </section>
 
       {/* Promo & News Section (PPG Refinique Certification) */}
-      <section className="section-full-width py-16 bg-[#f8f9fa] border-t border-gray-200/50">
+      <section className="section-full-width py-8 md:py-16 bg-[#f8f9fa] border-t border-gray-200/50">
         <div className="container mx-auto px-4 md:px-12">
           {(() => {
             const activePromos = promos.length > 0
@@ -755,24 +755,24 @@ export default function Home() {
                 loop={activePromos.length > 1}
                 autoplay={activePromos.length > 1 ? { delay: 4000, disableOnInteraction: false } : false}
                 pagination={activePromos.length > 1 ? { clickable: true } : false}
-                className="promo-swiper !pb-12"
+                className="promo-swiper !pb-8 md:!pb-12"
               >
                 {activePromos.map((promo) => (
                   <SwiperSlide key={promo.id} className="!h-auto flex">
-                    <div className="bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-6 md:p-10 lg:p-12 border border-zinc-800 w-full h-full flex flex-col justify-center">
+                    <div className="bg-zinc-950 text-white rounded-2xl md:rounded-3xl relative overflow-hidden p-4 sm:p-6 md:p-10 lg:p-12 border border-zinc-800 w-full h-full flex flex-col justify-center">
                       <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
                       <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
                       
-                      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-6 lg:gap-8 items-center">
                         {/* Image Collage / Poster */}
                         {promo.imageUrl && promo.imageUrl.trim() !== '' && promo.imageUrl.trim() !== '/' && (
                           <div className="lg:col-span-5 w-full flex justify-center">
-                            <div className="relative w-full max-w-[280px] aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
+                            <div className="relative w-full max-w-none sm:max-w-[280px] aspect-[16/9] sm:aspect-square lg:aspect-[4/5] rounded-xl md:rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
                               <Image
                                 src={promo.imageUrl}
                                 alt={promo.title}
                                 fill
-                                sizes="(max-width: 768px) 100vw, 300px"
+                                sizes="(max-width: 640px) 100vw, 300px"
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                 unoptimized
                               />
@@ -783,26 +783,26 @@ export default function Home() {
                         {/* Content Details */}
                         <div className={promo.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
                           {promo.badge && (
-                            <span className="text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-3.5 py-1 rounded-full font-sans mb-4 inline-block">
+                            <span className="text-[10px] sm:text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-2.5 sm:px-3.5 py-0.5 sm:py-1 rounded-full font-sans mb-2 sm:mb-4 inline-block">
                               {promo.badge}
                             </span>
                           )}
                           
-                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold mb-4 tracking-tight text-white leading-tight font-sporty">
+                          <h2 className="text-base sm:text-2xl lg:text-3xl font-extrabold mb-2 sm:mb-4 tracking-tight text-white leading-snug font-sporty">
                             {promo.title ? promo.title.replace(/\s+([^\s]+)$/, '\u00A0$1') : ''}
                           </h2>
                           
-                          <p className="text-sm sm:text-base text-zinc-300 mb-6 leading-relaxed whitespace-pre-line font-sans font-normal">
+                          <p className="text-xs sm:text-base text-zinc-300 mb-3 sm:mb-6 leading-relaxed whitespace-pre-line font-sans font-normal line-clamp-3 sm:line-clamp-none">
                             {promo.description}
                           </p>
                           
-                          <div className="flex flex-wrap gap-4">
+                          <div className="flex flex-wrap gap-3 sm:gap-4">
                             {promo.buttonText && promo.buttonUrl && (
                               <a
                                 href={promo.buttonUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center px-6 py-3 text-sm bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                                className="inline-flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-lg sm:rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                               >
                                 {promo.buttonText}
                               </a>
