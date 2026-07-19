@@ -13,6 +13,7 @@ const ALLOWED_COLLECTIONS = [
   'settings',
   'partners',
   'newsletter',
+  'promos',
 ] as const
 
 type AllowedCollection = (typeof ALLOWED_COLLECTIONS)[number]

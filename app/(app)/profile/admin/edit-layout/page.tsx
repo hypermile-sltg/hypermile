@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { db } from '@/lib/firebase'
 import { adminFirestoreWrite } from '@/lib/admin-firestore-client'
 import { AdminPagination, paginateList } from '@/components/admin/AdminPagination'
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { Loader2, Edit2, Check, Trash2, User, Plus, Search, FileSpreadsheet } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { getYouTubeId } from '@/lib/youtube'
+import { getVideoType, getVideoThumbnail, getVideoEmbedUrl, isEmbeddable } from '@/lib/video'
 import { AdminTabDropdown } from '@/components/admin/AdminTabDropdown'
 import {
   Dialog,
@@ -36,6 +37,7 @@ type PortfolioItem = {
   id: string
   url: string
   title?: string
+  videoUrl?: string
   createdAt?: string | null
 }
 
@@ -46,7 +48,18 @@ type PartnerLogo = {
   createdAt?: string | null
 }
 
-const emptyPortfolio = { url: '', title: '' }
+type PromoItem = {
+  id: string
+  badge: string
+  title: string
+  description: string
+  imageUrl: string
+  buttonText: string
+  buttonUrl: string
+  createdAt?: string | null
+}
+
+const emptyPortfolio = { url: '', title: '', videoUrl: '' }
 const emptyPartner = { src: '', alt: '' }
 
 const emptyTestimonial = {
@@ -57,18 +70,31 @@ const emptyTestimonial = {
   rating: 5 as number | null,
 }
 
+const emptyPromo = {
+  badge: '',
+  title: '',
+  description: '',
+  imageUrl: '',
+  buttonText: '',
+  buttonUrl: '',
+}
+
 export default function EditLayoutPage() {
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
   const [partners, setPartners] = useState<PartnerLogo[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [promos, setPromos] = useState<PromoItem[]>([])
+  
   const [loadingPortfolio, setLoadingPortfolio] = useState(true)
   const [loadingPartners, setLoadingPartners] = useState(true)
   const [loadingTestimonials, setLoadingTestimonials] = useState(true)
+  const [loadingPromos, setLoadingPromos] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
   const [portfolioDialogOpen, setPortfolioDialogOpen] = useState(false)
   const [portfolioForm, setPortfolioForm] = useState(emptyPortfolio)
   const [portfolioEditId, setPortfolioEditId] = useState<string | null>(null)
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null)
 
   const [partnerDialogOpen, setPartnerDialogOpen] = useState(false)
   const [partnerForm, setPartnerForm] = useState(emptyPartner)
@@ -77,56 +103,40 @@ export default function EditLayoutPage() {
   const [testimonialDialogOpen, setTestimonialDialogOpen] = useState(false)
   const [testimonialForm, setTestimonialForm] = useState(emptyTestimonial)
   const [testimonialEditId, setTestimonialEditId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'portfolio' | 'partners' | 'testimonials' | 'settings' | 'newsletter'>('portfolio')
+
+  const [promoDialogOpen, setPromoDialogOpen] = useState(false)
+  const [promoForm, setPromoForm] = useState(emptyPromo)
+  const [promoEditId, setPromoEditId] = useState<string | null>(null)
+
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'partners' | 'testimonials' | 'promos' | 'settings' | 'newsletter'>('portfolio')
   const [portfolioPage, setPortfolioPage] = useState(1)
   const [partnersPage, setPartnersPage] = useState(1)
   const [testimonialsPage, setTestimonialsPage] = useState(1)
+  const [promosPage, setPromosPage] = useState(1)
   const [newsletterPage, setNewsletterPage] = useState(1)
+  
   const [heroVideoUrl, setHeroVideoUrl] = useState<string>('')
   const [loadingSettings, setLoadingSettings] = useState(true)
   const [newsletter, setNewsletter] = useState<{ id: string; email: string; createdAt?: string | null }[]>([])
   const [loadingNewsletter, setLoadingNewsletter] = useState(true)
   const [searchNewsletter, setSearchNewsletter] = useState('')
 
-  // Promo & News banner settings states
-  const [promoBadge, setPromoBadge] = useState<string>('Sertifikasi Global')
-  const [promoTitle, setPromoTitle] = useState<string>('Standar Dunia Kini Hadir Lebih Dekat! 🏆')
-  const [promoText, setPromoText] = useState<string>(
-    'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.'
-  )
-  const [promoImageUrl, setPromoImageUrl] = useState<string>('/promo-refinique.jpg')
-  const [promoButtonText, setPromoButtonText] = useState<string>('Hubungi Admin WA')
-  const [promoButtonUrl, setPromoButtonUrl] = useState<string>('https://wa.me/6285900472233')
-
   // Social media settings states
   const [instagramUrl, setInstagramUrl] = useState<string>('https://www.instagram.com/hypermile_salatiga')
   const [tiktokUrl, setTiktokUrl] = useState<string>('https://www.tiktok.com/@hypermileofficial')
   const [youtubeUrl, setYoutubeUrl] = useState<string>('https://www.youtube.com/@hypermileautobodyworks')
 
+  const migratedPromosRef = useRef(false)
+
   const fetchSettings = async () => {
     setLoadingSettings(true)
     try {
-      // Fetch Hero settings
       const heroRef = doc(db, 'settings', 'hero')
       const heroSnap = await getDoc(heroRef)
       if (heroSnap.exists()) {
         setHeroVideoUrl(heroSnap.data().videoUrl || '')
       }
 
-      // Fetch Promo settings
-      const promoRef = doc(db, 'settings', 'promo')
-      const promoSnap = await getDoc(promoRef)
-      if (promoSnap.exists()) {
-        const data = promoSnap.data()
-        setPromoBadge(data.badge !== undefined ? data.badge : 'Sertifikasi Global')
-        setPromoTitle(data.title !== undefined ? data.title : '')
-        setPromoText(data.description !== undefined ? data.description : '')
-        setPromoImageUrl(data.imageUrl !== undefined ? data.imageUrl : '')
-        setPromoButtonText(data.buttonText !== undefined ? data.buttonText : '')
-        setPromoButtonUrl(data.buttonUrl !== undefined ? data.buttonUrl : '')
-      }
-
-      // Fetch Social settings
       const socialsRef = doc(db, 'settings', 'socials')
       const socialsSnap = await getDoc(socialsRef)
       if (socialsSnap.exists()) {
@@ -146,7 +156,6 @@ export default function EditLayoutPage() {
     if (isSaving) return
     setIsSaving(true)
     try {
-      // Save Hero Video Url
       await adminFirestoreWrite({
         collection: 'settings',
         action: 'update',
@@ -156,22 +165,6 @@ export default function EditLayoutPage() {
         },
       })
 
-      // Save Promo details
-      await adminFirestoreWrite({
-        collection: 'settings',
-        action: 'update',
-        id: 'promo',
-        data: {
-          badge: promoBadge.trim(),
-          title: promoTitle.trim(),
-          description: promoText.trim(),
-          imageUrl: promoImageUrl.trim(),
-          buttonText: promoButtonText.trim(),
-          buttonUrl: promoButtonUrl.trim(),
-        },
-      })
-
-      // Save Social details
       await adminFirestoreWrite({
         collection: 'settings',
         action: 'update',
@@ -189,74 +182,6 @@ export default function EditLayoutPage() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  const fetchPortfolio = async () => {
-    setLoadingPortfolio(true)
-    try {
-      const snapshot = await getDocs(collection(db, 'portfolio'))
-      setPortfolio(
-        sortPortfolioNewestFirst(
-          snapshot.docs.map((docSnap) => ({
-            id: docSnap.id,
-            url: docSnap.data().url || '',
-            title: docSnap.data().title || '',
-            createdAt: docSnap.data().createdAt || null,
-          }))
-        )
-      )
-    } catch (error) {
-      console.error('Error fetching portfolio:', error)
-      toast.error('Gagal memuat portfolio!')
-    }
-    setLoadingPortfolio(false)
-  }
-
-  const fetchPartners = async () => {
-    setLoadingPartners(true)
-    try {
-      const snapshot = await getDocs(collection(db, 'partners'))
-      const data = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        src: docSnap.data().src || '',
-        alt: docSnap.data().alt || '',
-        createdAt: docSnap.data().createdAt || null,
-      }))
-      data.sort((a, b) => {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
-        return timeB - timeA
-      })
-      setPartners(data)
-    } catch (error) {
-      console.error('Error fetching partners:', error)
-      toast.error('Gagal memuat partner!')
-    }
-    setLoadingPartners(false)
-  }
-
-  const fetchTestimonials = async () => {
-    setLoadingTestimonials(true)
-    try {
-      const snapshot = await getDocs(collection(db, 'testimonials'))
-      setTestimonials(
-        snapshot.docs.map((docSnap) => {
-          const data = docSnap.data()
-          return {
-            id: docSnap.id,
-            message: data.message || '',
-            name: data.name || '',
-            role: data.role || '',
-            photo: data.photo || '',
-            rating: data.rating || 5,
-          }
-        })
-      )
-    } catch (error) {
-      console.error('Error fetching testimonials:', error)
-      toast.error('Gagal memuat testimonial!')
-    }
-    setLoadingTestimonials(false)
   }
 
   const fetchNewsletter = async () => {
@@ -339,11 +264,144 @@ export default function EditLayoutPage() {
   }
 
   useEffect(() => {
-    fetchPortfolio()
-    fetchTestimonials()
+    const unsubPortfolio = onSnapshot(
+      collection(db, 'portfolio'),
+      (snapshot) => {
+        setPortfolio(
+          sortPortfolioNewestFirst(
+            snapshot.docs.map((docSnap) => ({
+              id: docSnap.id,
+              url: docSnap.data().url || '',
+              title: docSnap.data().title || '',
+              videoUrl: docSnap.data().videoUrl || '',
+              createdAt: docSnap.data().createdAt || null,
+            }))
+          )
+        )
+        setLoadingPortfolio(false)
+      },
+      (error) => {
+        console.error('Error fetching portfolio:', error)
+        toast.error('Gagal memuat portfolio!')
+        setLoadingPortfolio(false)
+      }
+    )
+
+    const unsubPartners = onSnapshot(
+      collection(db, 'partners'),
+      (snapshot) => {
+        const data = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          src: docSnap.data().src || '',
+          alt: docSnap.data().alt || '',
+          createdAt: docSnap.data().createdAt || null,
+        }))
+        data.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeB - timeA
+        })
+        setPartners(data)
+        setLoadingPartners(false)
+      },
+      (error) => {
+        console.error('Error fetching partners:', error)
+        toast.error('Gagal memuat partner!')
+        setLoadingPartners(false)
+      }
+    )
+
+    const unsubTestimonials = onSnapshot(
+      collection(db, 'testimonials'),
+      (snapshot) => {
+        setTestimonials(
+          snapshot.docs.map((docSnap) => {
+            const data = docSnap.data()
+            return {
+              id: docSnap.id,
+              message: data.message || '',
+              name: data.name || '',
+              role: data.role || '',
+              photo: data.photo || '',
+              rating: data.rating || 5,
+            }
+          })
+        )
+        setLoadingTestimonials(false)
+      },
+      (error) => {
+        console.error('Error fetching testimonials:', error)
+        toast.error('Gagal memuat testimonial!')
+        setLoadingTestimonials(false)
+      }
+    )
+
+    const unsubPromos = onSnapshot(
+      collection(db, 'promos'),
+      (snapshot) => {
+        const data = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          badge: docSnap.data().badge || '',
+          title: docSnap.data().title || '',
+          description: docSnap.data().description || '',
+          imageUrl: docSnap.data().imageUrl || '',
+          buttonText: docSnap.data().buttonText || '',
+          buttonUrl: docSnap.data().buttonUrl || '',
+          createdAt: docSnap.data().createdAt || null,
+        }))
+
+        if (data.length === 0 && !migratedPromosRef.current) {
+          migratedPromosRef.current = true
+          void (async () => {
+            try {
+              const oldPromoSnap = await getDoc(doc(db, 'settings', 'promo'))
+              if (!oldPromoSnap.exists()) return
+              const oldData = oldPromoSnap.data()
+              const migratedData = {
+                badge: oldData.badge || 'Sertifikasi Global',
+                title: oldData.title || 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
+                description: oldData.description || '',
+                imageUrl: oldData.imageUrl || '/promo-refinique.jpg',
+                buttonText: oldData.buttonText || '',
+                buttonUrl: oldData.buttonUrl || '',
+                createdAt: new Date().toISOString(),
+              }
+              await adminFirestoreWrite({
+                collection: 'promos',
+                action: 'create',
+                data: migratedData,
+              })
+              toast.success('Data promo dari sistem lama berhasil dimigrasikan!')
+            } catch (error) {
+              console.error('Error migrating promos:', error)
+            }
+          })()
+        }
+
+        data.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeB - timeA
+        })
+        setPromos(data)
+        setLoadingPromos(false)
+      },
+      (error) => {
+        console.error('Error fetching promos:', error)
+        toast.error('Gagal memuat promo & berita!')
+        setLoadingPromos(false)
+      }
+    )
+
     fetchSettings()
-    fetchPartners()
     fetchNewsletter()
+
+    return () => {
+      unsubPortfolio()
+      unsubPartners()
+      unsubTestimonials()
+      unsubPromos()
+    }
   }, [])
 
   useEffect(() => {
@@ -366,6 +424,11 @@ export default function EditLayoutPage() {
     if (newsletterPage > totalPages) setNewsletterPage(totalPages)
   }, [newsletter.length, newsletterPage])
 
+  useEffect(() => {
+    const { totalPages } = paginateList(promos, promosPage)
+    if (promosPage > totalPages) setPromosPage(totalPages)
+  }, [promos.length, promosPage])
+
   const paginatedPortfolio = paginateList(portfolio, portfolioPage)
   const paginatedPartners = paginateList(partners, partnersPage)
   const paginatedTestimonials = paginateList(testimonials, testimonialsPage)
@@ -377,9 +440,17 @@ export default function EditLayoutPage() {
   }
 
   const openEditPortfolio = (item: PortfolioItem) => {
-    setPortfolioForm({ url: item.url, title: item.title || '' })
+    setPortfolioForm({ url: item.url, title: item.title || '', videoUrl: item.videoUrl || '' })
     setPortfolioEditId(item.id)
     setPortfolioDialogOpen(true)
+  }
+
+  const handlePreviewVideo = (videoUrl: string) => {
+    if (isEmbeddable(videoUrl) && getVideoEmbedUrl(videoUrl)) {
+      setPreviewVideoUrl(videoUrl)
+      return
+    }
+    window.open(videoUrl, '_blank', 'noopener,noreferrer')
   }
 
   const openAddPartner = () => {
@@ -398,6 +469,25 @@ export default function EditLayoutPage() {
     setTestimonialForm(emptyTestimonial)
     setTestimonialEditId(null)
     setTestimonialDialogOpen(true)
+  }
+
+  const openAddPromo = () => {
+    setPromoForm(emptyPromo)
+    setPromoEditId(null)
+    setPromoDialogOpen(true)
+  }
+
+  const openEditPromo = (item: PromoItem) => {
+    setPromoForm({
+      badge: item.badge,
+      title: item.title,
+      description: item.description,
+      imageUrl: item.imageUrl,
+      buttonText: item.buttonText,
+      buttonUrl: item.buttonUrl,
+    })
+    setPromoEditId(item.id)
+    setPromoDialogOpen(true)
   }
 
   const openEditTestimonial = (testi: Testimonial) => {
@@ -421,9 +511,10 @@ export default function EditLayoutPage() {
     setIsSaving(true)
 
     try {
-      const data = {
+      const data: Record<string, string> = {
         url: portfolioForm.url.trim(),
         title: portfolioForm.title?.trim() || '',
+        videoUrl: portfolioForm.videoUrl?.trim() || '',
       }
 
       if (portfolioEditId) {
@@ -444,7 +535,6 @@ export default function EditLayoutPage() {
       }
 
       setPortfolioDialogOpen(false)
-      await fetchPortfolio()
     } catch (error) {
       console.error(error)
       toast.error(portfolioEditId ? 'Gagal menyimpan portfolio!' : 'Gagal menambahkan portfolio!')
@@ -459,7 +549,6 @@ export default function EditLayoutPage() {
       try {
         await adminFirestoreWrite({ collection: 'portfolio', action: 'delete', id })
         toast.success('Portfolio berhasil dihapus!')
-        await fetchPortfolio()
       } catch (error) {
         console.error(error)
         toast.error('Gagal menghapus portfolio!')
@@ -499,7 +588,6 @@ export default function EditLayoutPage() {
       }
 
       setPartnerDialogOpen(false)
-      await fetchPartners()
     } catch (error) {
       console.error(error)
       toast.error(partnerEditId ? 'Gagal menyimpan partner!' : 'Gagal menambahkan partner!')
@@ -514,7 +602,6 @@ export default function EditLayoutPage() {
       try {
         await adminFirestoreWrite({ collection: 'partners', action: 'delete', id })
         toast.success('Partner berhasil dihapus!')
-        await fetchPartners()
       } catch (error) {
         console.error(error)
         toast.error('Gagal menghapus partner!')
@@ -558,7 +645,6 @@ export default function EditLayoutPage() {
       }
 
       setTestimonialDialogOpen(false)
-      await fetchTestimonials()
     } catch (error) {
       console.error(error)
       toast.error(testimonialEditId ? 'Gagal menyimpan testimonial!' : 'Gagal menambahkan testimonial!')
@@ -573,10 +659,67 @@ export default function EditLayoutPage() {
       try {
         await adminFirestoreWrite({ collection: 'testimonials', action: 'delete', id })
         toast.success('Testimonial berhasil dihapus!')
-        await fetchTestimonials()
       } catch (error) {
         console.error(error)
         toast.error('Gagal menghapus testimonial!')
+      }
+    })
+  }
+
+  const handleSavePromo = async () => {
+    const { badge, title, description, imageUrl, buttonText, buttonUrl } = promoForm
+    if (!title.trim() || !description.trim() || !imageUrl.trim()) {
+      toast.error('Judul, deskripsi, dan URL gambar wajib diisi!')
+      return
+    }
+    if (isSaving) return
+    setIsSaving(true)
+
+    try {
+      const data = {
+        badge: badge.trim(),
+        title: title.trim(),
+        description: description.trim(),
+        imageUrl: imageUrl.trim(),
+        buttonText: buttonText.trim(),
+        buttonUrl: buttonUrl.trim(),
+      }
+
+      if (promoEditId) {
+        await adminFirestoreWrite({
+          collection: 'promos',
+          action: 'update',
+          id: promoEditId,
+          data,
+        })
+        toast.success('Promo berhasil diperbarui!')
+      } else {
+        await adminFirestoreWrite({
+          collection: 'promos',
+          action: 'create',
+          data: { ...data, createdAt: new Date().toISOString() },
+        })
+        toast.success('Promo berhasil ditambahkan!')
+      }
+
+      setPromoDialogOpen(false)
+    } catch (error) {
+      console.error(error)
+      toast.error(promoEditId ? 'Gagal menyimpan promo!' : 'Gagal menambahkan promo!')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeletePromo = (id: string) => {
+    const item = promos.find((p) => p.id === id)
+    confirmAction(`Hapus promo "${item?.title || 'Untitled'}"?`, async () => {
+      try {
+        await adminFirestoreWrite({ collection: 'promos', action: 'delete', id })
+        toast.success('Promo berhasil dihapus!')
+      } catch (error) {
+        console.error(error)
+        toast.error('Gagal menghapus promo!')
       }
     })
   }
@@ -585,6 +728,7 @@ export default function EditLayoutPage() {
     { key: 'portfolio', label: `🖼 Portfolio (${portfolio.length})` },
     { key: 'partners', label: `🤝 Partners (${partners.length})` },
     { key: 'testimonials', label: `💬 Testimonial (${testimonials.length})` },
+    { key: 'promos', label: `🎁 Promo & Berita (${promos.length})` },
     { key: 'newsletter', label: `✉ Newsletter (${newsletter.length})` },
     { key: 'settings', label: `⚙ Settings` },
   ] as const
@@ -642,18 +786,41 @@ export default function EditLayoutPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {paginatedPortfolio.items.map((item) => (
                   <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    {item.url && (
-                      <div className="w-full h-40 relative mb-3 rounded-lg overflow-hidden border border-gray-200">
-                        <Image
-                          unoptimized
-                          src={item.url}
-                          alt={item.title || 'Portfolio'}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <h4 className="font-bold text-gray-900 mb-1">{item.title || 'Tanpa judul'}</h4>
+                    {(() => {
+                      const autoThumb = (!item.url && item.videoUrl) ? getVideoThumbnail(item.videoUrl) : null
+                      const displaySrc = item.url || autoThumb
+                      return displaySrc ? (
+                        <div className="w-full h-40 relative mb-3 rounded-lg overflow-hidden border border-gray-200">
+                          <Image
+                            unoptimized
+                            src={displaySrc}
+                            alt={item.title || 'Portfolio'}
+                            fill
+                            className="object-cover"
+                          />
+                          {item.videoUrl && (
+                            <button
+                              type="button"
+                              onClick={() => handlePreviewVideo(item.videoUrl!)}
+                              aria-label="Putar video"
+                              className="absolute inset-0 flex items-center justify-center bg-black/30 hover:bg-black/45 transition-colors cursor-pointer"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-md hover:scale-110 transition-transform">
+                                <svg className="w-5 h-5 text-red-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                      ) : null
+                    })()}
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-bold text-gray-900">{item.title || 'Tanpa judul'}</h4>
+                      {item.videoUrl && (
+                        <span className="inline-block bg-red-100 text-red-700 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
+                          {getVideoType(item.videoUrl) ?? 'Video'}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 truncate mb-4">{item.url}</p>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEditPortfolio(item)}>
@@ -828,6 +995,78 @@ export default function EditLayoutPage() {
           </div>
         )}
 
+        {/* PROMOS TAB */}
+        {activeTab === 'promos' && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={openAddPromo} className="bg-green-600 hover:bg-green-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Promo & Berita
+              </Button>
+            </div>
+
+            {loadingPromos ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-blue-500" size={32} />
+              </div>
+            ) : promos.length === 0 ? (
+              <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                Belum ada promo & berita. Klik &quot;Tambah Promo & Berita&quot; untuk mulai.
+              </div>
+            ) : (
+              <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginateList(promos, promosPage).items.map((item) => (
+                  <div key={item.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    {item.imageUrl && item.imageUrl.trim() !== '' && item.imageUrl.trim() !== '/' && (
+                      <div className="w-full h-40 relative mb-3 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                        <Image
+                          unoptimized
+                          src={item.imageUrl}
+                          alt={item.title || 'Promo'}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mb-2">
+                      {item.badge && (
+                        <span className="inline-block bg-red-100 text-red-800 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    <h4 className="font-bold text-gray-900 mb-1">{item.title || 'Tanpa judul'}</h4>
+                    <p className="text-xs text-gray-600 line-clamp-3 mb-4">{item.description}</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEditPromo(item)}>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeletePromo(item.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Hapus
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <AdminPagination
+                totalItems={promos.length}
+                page={promosPage}
+                onPageChange={setPromosPage}
+                label="promo"
+              />
+              </>
+            )}
+          </div>
+        )}
+
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 md:p-6 space-y-8">
@@ -842,7 +1081,7 @@ export default function EditLayoutPage() {
                   placeholder="https://youtu.be/OP4AtnrYmoY?si=mLT-uxLeY43Rp_Qk"
                 />
                 <p className="text-xs text-gray-500 mt-1.5">
-                  Masukkan tautan video YouTube (mendukung format shortener https://youtu.be/xxx atau tautan lengkap https://www.youtube.com/watch?v=xxx).
+                  Masukkan tautan video YouTube (mendukung youtu.be, watch?v=, embed, dan Shorts).
                 </p>
               </div>
 
@@ -872,76 +1111,7 @@ export default function EditLayoutPage() {
               )}
             </div>
 
-            {/* PROMO & NEWS SETTINGS */}
-            {!loadingSettings && (
-              <div className="space-y-4 max-w-2xl border-t pt-6">
-                <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Pengaturan Promo & Berita Utama</h3>
-                
-                <div>
-                  <label className="block mb-2 font-medium text-sm text-gray-700">Badge Banner</label>
-                  <Input
-                    value={promoBadge}
-                    onChange={(e) => setPromoBadge(e.target.value)}
-                    placeholder="Sertifikasi Global, Promo Terbatas, dll."
-                  />
-                </div>
 
-                <div>
-                  <label className="block mb-2 font-medium text-sm text-gray-700">Judul Berita / Promo</label>
-                  <Input
-                    value={promoTitle}
-                    onChange={(e) => setPromoTitle(e.target.value)}
-                    placeholder="Masukkan judul utama"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-2 font-medium text-sm text-gray-700">Isi Konten / Deskripsi</label>
-                  <Textarea
-                    rows={6}
-                    value={promoText}
-                    onChange={(e) => setPromoText(e.target.value)}
-                    placeholder="Masukkan penjelasan detail (dukungan baris baru/line-break)..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-2 font-medium text-sm text-gray-700">URL Gambar Banner</label>
-                  <Input
-                    value={promoImageUrl}
-                    onChange={(e) => setPromoImageUrl(e.target.value)}
-                    placeholder="/promo-refinique.jpg atau URL gambar eksternal"
-                  />
-                  <p className="text-xs text-gray-500 mt-1.5">
-                    Gunakan <strong>/promo-refinique.jpg</strong> untuk gambar bawaan sertifikasi PPG.
-                  </p>
-                  {promoImageUrl && (
-                    <div className="w-full max-w-xs aspect-[4/5] relative mt-3 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
-                      <Image unoptimized src={promoImageUrl} alt="Pratinjau Gambar Promo" fill className="object-cover" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 font-medium text-sm text-gray-700">Teks Tombol Aksi</label>
-                    <Input
-                      value={promoButtonText}
-                      onChange={(e) => setPromoButtonText(e.target.value)}
-                      placeholder="Hubungi Admin WA (kosongkan jika tidak ada)"
-                    />
-                  </div>
-                  <div>
-                    <label className="block mb-2 font-medium text-sm text-gray-700">Tautan / Link Tombol</label>
-                    <Input
-                      value={promoButtonUrl}
-                      onChange={(e) => setPromoButtonUrl(e.target.value)}
-                      placeholder="https://wa.me/xxx"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* SOCIAL MEDIA SETTINGS */}
             {!loadingSettings && (
@@ -1108,6 +1278,26 @@ export default function EditLayoutPage() {
           </div>
         )}
 
+      {/* Video Preview Dialog */}
+      <Dialog open={!!previewVideoUrl} onOpenChange={(open) => !open && setPreviewVideoUrl(null)}>
+        <DialogContent className="sm:max-w-3xl p-0 overflow-hidden bg-black border-none text-white gap-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Preview Video</DialogTitle>
+          </DialogHeader>
+          {previewVideoUrl && getVideoEmbedUrl(previewVideoUrl) && (
+            <div className="relative w-full aspect-video">
+              <iframe
+                src={getVideoEmbedUrl(previewVideoUrl)!}
+                className="absolute inset-0 w-full h-full"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+                title="Preview video portfolio"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Portfolio Dialog */}
       <Dialog open={portfolioDialogOpen} onOpenChange={setPortfolioDialogOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1129,11 +1319,27 @@ export default function EditLayoutPage() {
               )}
             </div>
             <div>
+              <label className="block mb-2 font-medium text-sm text-gray-700">URL Video <span className="text-gray-400 font-normal">(Opsional — YouTube, Instagram Reels, TikTok)</span></label>
+              <Input
+                value={portfolioForm.videoUrl}
+                onChange={(e) => setPortfolioForm({ ...portfolioForm, videoUrl: e.target.value })}
+                placeholder="https://youtu.be/xxx , https://www.youtube.com/shorts/xxx , atau https://www.instagram.com/reel/xxx"
+              />
+              {portfolioForm.videoUrl && getVideoType(portfolioForm.videoUrl) && (
+                <p className="text-xs text-green-600 font-medium mt-1.5">
+                  ✓ Terdeteksi sebagai video <strong>{getVideoType(portfolioForm.videoUrl)}</strong> — tombol ▶ play akan muncul di galeri.
+                </p>
+              )}
+              {portfolioForm.videoUrl && !getVideoType(portfolioForm.videoUrl) && (
+                <p className="text-xs text-red-500 mt-1.5">URL tidak dikenali. Gunakan link YouTube (termasuk Shorts), Instagram Reels, atau TikTok.</p>
+              )}
+            </div>
+            <div>
               <label className="block mb-2 font-medium text-sm text-gray-700">Judul</label>
               <Input
                 value={portfolioForm.title}
                 onChange={(e) => setPortfolioForm({ ...portfolioForm, title: e.target.value })}
-                placeholder="Judul foto portfolio"
+                placeholder="Judul foto/video portfolio"
               />
             </div>
           </div>
@@ -1264,6 +1470,85 @@ export default function EditLayoutPage() {
             <Button onClick={handleSavePartner} className="bg-green-600 hover:bg-green-700" disabled={isSaving}>
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
               {partnerEditId ? 'Simpan' : 'Tambah'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promo Dialog */}
+      <Dialog open={promoDialogOpen} onOpenChange={setPromoDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{promoEditId ? 'Edit Promo & Berita' : 'Tambah Promo & Berita Baru'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60svh] overflow-y-auto pr-1">
+            <div>
+              <label className="block mb-2 font-medium text-sm text-gray-700">Badge Banner</label>
+              <Input
+                value={promoForm.badge}
+                onChange={(e) => setPromoForm({ ...promoForm, badge: e.target.value })}
+                placeholder="Sertifikasi Global, Promo Terbatas, dll."
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium text-sm text-gray-700">Judul Berita / Promo*</label>
+              <Input
+                value={promoForm.title}
+                onChange={(e) => setPromoForm({ ...promoForm, title: e.target.value })}
+                placeholder="Masukkan judul utama"
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium text-sm text-gray-700">Isi Konten / Deskripsi*</label>
+              <Textarea
+                rows={4}
+                value={promoForm.description}
+                onChange={(e) => setPromoForm({ ...promoForm, description: e.target.value })}
+                placeholder="Masukkan penjelasan detail..."
+              />
+            </div>
+            <div>
+              <label className="block mb-2 font-medium text-sm text-gray-700">URL Gambar Banner*</label>
+              <Input
+                value={promoForm.imageUrl}
+                onChange={(e) => setPromoForm({ ...promoForm, imageUrl: e.target.value })}
+                placeholder="/promo-refinique.jpg atau URL gambar eksternal"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Gunakan <strong>/promo-refinique.jpg</strong> untuk gambar bawaan sertifikasi PPG.
+              </p>
+              {promoForm.imageUrl && promoForm.imageUrl.trim() !== '' && promoForm.imageUrl.trim() !== '/' && (
+                <div className="w-full max-w-xs aspect-[4/5] relative mt-3 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                  <Image unoptimized src={promoForm.imageUrl} alt="Pratinjau" fill className="object-cover" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2 font-medium text-sm text-gray-700">Teks Tombol Aksi</label>
+                <Input
+                  value={promoForm.buttonText}
+                  onChange={(e) => setPromoForm({ ...promoForm, buttonText: e.target.value })}
+                  placeholder="Hubungi Admin WA (kosongkan jika tidak ada)"
+                />
+              </div>
+              <div>
+                <label className="block mb-2 font-medium text-sm text-gray-700">Tautan / Link Tombol</label>
+                <Input
+                  value={promoForm.buttonUrl}
+                  onChange={(e) => setPromoForm({ ...promoForm, buttonUrl: e.target.value })}
+                  placeholder="https://wa.me/xxx"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" onClick={() => setPromoDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSavePromo} className="bg-green-600 hover:bg-green-700 text-white" disabled={isSaving}>
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+              {promoEditId ? 'Simpan' : 'Tambah'}
             </Button>
           </DialogFooter>
         </DialogContent>

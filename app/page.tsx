@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, Pagination } from 'swiper/modules'
+import { Navigation, Pagination, Autoplay } from 'swiper/modules'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Shield, Sparkles, Paintbrush, Wrench, ChevronLeft, ChevronRight, CheckCircle2, Volume2, VolumeX } from "lucide-react"
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ import { collection, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore'
 import { LogoCloud } from '@/components/ui/logo-cloud-3'
 import { sortPortfolioNewestFirst } from '@/lib/portfolio'
 import { getYouTubeId } from '@/lib/youtube'
+import { getVideoEmbedUrl, getVideoType, getVideoThumbnail, isEmbeddable } from '@/lib/video'
 
 
 
@@ -76,6 +77,18 @@ interface Portfolio {
   id: string
   title: string
   url: string
+  videoUrl?: string
+}
+
+interface PromoItem {
+  id: string
+  badge: string
+  title: string
+  description: string
+  imageUrl: string
+  buttonText: string
+  buttonUrl: string
+  createdAt?: string | null
 }
 
 export default function Home() {
@@ -90,15 +103,9 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(true)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
-  // Promo settings state
-  const [promoData, setPromoData] = useState({
-    badge: 'Sertifikasi Global',
-    title: 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
-    description: 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
-    imageUrl: '/promo-refinique.jpg',
-    buttonText: '',
-    buttonUrl: ''
-  })
+  const [promos, setPromos] = useState<PromoItem[]>([])
+  const [fallbackPromo, setFallbackPromo] = useState<PromoItem | null>(null)
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null)
 
   const toggleMute = () => {
     if (!iframeRef.current) return
@@ -133,25 +140,58 @@ export default function Home() {
     return () => unsub()
   }, [])
 
-  // Load promo setting (Real-time)
+  // Load promos collection (Real-time)
+  useEffect(() => {
+    const unsub = onSnapshot(
+      collection(db, "promos"),
+      (snapshot) => {
+        const data = snapshot.docs.map((docSnap) => ({
+          id: docSnap.id,
+          badge: docSnap.data().badge || '',
+          title: docSnap.data().title || '',
+          description: docSnap.data().description || '',
+          imageUrl: docSnap.data().imageUrl || '',
+          buttonText: docSnap.data().buttonText || '',
+          buttonUrl: docSnap.data().buttonUrl || '',
+          createdAt: docSnap.data().createdAt || null,
+        })) as PromoItem[]
+        
+        data.sort((a, b) => {
+          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+          return timeB - timeA
+        })
+
+        setPromos(data)
+      },
+      (error) => {
+        console.error("Error fetching promos collection:", error)
+        setPromos([])
+      }
+    )
+    return () => unsub()
+  }, [])
+
+  // Load fallback promo setting (Real-time)
   useEffect(() => {
     const unsub = onSnapshot(
       doc(db, "settings", "promo"),
       (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data()
-          setPromoData({
-            badge: data.badge !== undefined ? data.badge : 'Sertifikasi Global',
-            title: data.title !== undefined ? data.title : 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
-            description: data.description !== undefined ? data.description : 'Hypermile Auto Body Works menjadi bengkel body repair & detailing pertama di Indonesia yang menerima sertifikasi resmi Body Shop Global Certification REFINIQUE by PPG.\n\nSertifikasi ini membuktikan bahwa setiap proses perbaikan, teknologi cat, hingga keahlian teknisi kami telah memenuhi standar global. Kami berkomitmen memberikan hasil restorasi kendaraan dengan kualitas terbaik dan ketahanan yang teruji secara internasional.',
-            imageUrl: data.imageUrl !== undefined ? data.imageUrl : '/promo-refinique.jpg',
-            buttonText: data.buttonText !== undefined ? data.buttonText : '',
-            buttonUrl: data.buttonUrl !== undefined ? data.buttonUrl : ''
+          setFallbackPromo({
+            id: 'fallback-settings',
+            badge: data.badge || 'Sertifikasi Global',
+            title: data.title || 'Standar Dunia Kini Hadir Lebih Dekat! 🏆',
+            description: data.description || '',
+            imageUrl: data.imageUrl || '/promo-refinique.jpg',
+            buttonText: data.buttonText || '',
+            buttonUrl: data.buttonUrl || ''
           })
         }
       },
       (error) => {
-        console.error("Error fetching promo settings:", error)
+        console.error("Error fetching fallback promo:", error)
       }
     )
     return () => unsub()
@@ -554,14 +594,28 @@ export default function Home() {
                 }}
                 className="!pb-12"
               >
-                {homePortfolio.map((img, index) => (
+                {homePortfolio.map((img, index) => {
+                  const hasVideo = !!(img.videoUrl && getVideoType(img.videoUrl))
+                  const canEmbed = !!(img.videoUrl && isEmbeddable(img.videoUrl))
+                  const autoThumb = (!img.url && img.videoUrl) ? getVideoThumbnail(img.videoUrl) : null
+                  const displaySrc = img.url || autoThumb
+                  return (
                   <SwiperSlide key={img.id}>
                     <div
                       className="cursor-pointer group relative aspect-[4/5] overflow-hidden rounded-2xl border border-gray-200 shadow-md bg-white"
-                      onClick={() => setSelectedImg(img.url)}
+                      onClick={() => {
+                        if (canEmbed) {
+                          setActiveVideoUrl(img.videoUrl!)
+                        } else if (img.videoUrl) {
+                          // TikTok: open in new tab for clean experience
+                          window.open(img.videoUrl, '_blank', 'noopener,noreferrer')
+                        } else {
+                          setSelectedImg(img.url)
+                        }
+                      }}
                     >
                       <Image
-                        src={img.url}
+                        src={displaySrc || img.url}
                         alt={img.title || 'Portfolio'}
                         fill
                         loading={index === 0 ? 'eager' : 'lazy'}
@@ -573,9 +627,17 @@ export default function Home() {
                           <h4 className="text-white font-semibold text-base leading-tight">{img.title}</h4>
                         )}
                       </div>
+                      {hasVideo && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <div className="w-9 h-9 rounded-full bg-white/90 shadow-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg className="w-4 h-4 text-red-600 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </SwiperSlide>
-                ))}
+                  )
+                })}
               </Swiper>
 
               {portfolioImages.length > HOME_PORTFOLIO_LIMIT && (
@@ -624,63 +686,136 @@ export default function Home() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Video Modal */}
+        <AnimatePresence>
+          {activeVideoUrl && (
+            <motion.div
+              className="fixed inset-0 bg-black/95 flex items-center justify-center z-50 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveVideoUrl(null)}
+            >
+              <button
+                type="button"
+                onClick={() => setActiveVideoUrl(null)}
+                aria-label="Tutup video"
+                className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center shadow-lg transition z-10"
+              >
+                <span className="text-2xl font-bold select-none">×</span>
+              </button>
+              <motion.div
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.85, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl"
+              >
+                {(() => {
+                  const embedUrl = getVideoEmbedUrl(activeVideoUrl)
+                  const type = getVideoType(activeVideoUrl)
+                  if (!embedUrl) return (
+                    <div className="flex items-center justify-center h-full text-white">URL Video tidak valid.</div>
+                  )
+                  return (
+                    <iframe
+                      src={embedUrl}
+                      className="w-full h-full"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                      title={`Video ${type ?? ''}`}
+                    />
+                  )
+                })()}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Promo & News Section (PPG Refinique Certification) */}
       <section className="section-full-width py-16 bg-[#f8f9fa] border-t border-gray-200/50">
         <div className="container mx-auto px-4 md:px-12">
-          <div className="bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-8 md:p-12 lg:p-16 shadow-2xl border border-zinc-800">
-            <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-            
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              {/* Image Collage / Poster */}
-              {promoData.imageUrl && (
-                <div className="lg:col-span-5 w-full flex justify-center">
-                  <div className="relative w-full max-w-sm aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
-                    <Image
-                      src={promoData.imageUrl}
-                      alt={promoData.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 400px"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      unoptimized
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Content Details */}
-              <div className={promoData.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
-                {promoData.badge && (
-                  <span className="text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-4 py-1.5 rounded-full font-sans mb-5 inline-block">
-                    {promoData.badge}
-                  </span>
-                )}
-                
-                <h2 className="text-[1.65rem] sm:text-4xl lg:text-5xl font-black mb-6 tracking-tight text-white leading-tight font-sporty">
-                  {promoData.title ? promoData.title.replace(/\s+([^\s]+)$/, '\u00A0$1') : ''}
-                </h2>
-                
-                <p className="text-base sm:text-lg text-zinc-300 mb-8 leading-relaxed whitespace-pre-line font-sans font-normal">
-                  {promoData.description}
-                </p>
-                
-                <div className="flex flex-wrap gap-4">
-                  {promoData.buttonText && promoData.buttonUrl && (
-                    <a
-                      href={promoData.buttonUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
-                    >
-                      {promoData.buttonText}
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          {(() => {
+            const activePromos = promos.length > 0
+              ? promos
+              : fallbackPromo
+                ? [fallbackPromo]
+                : []
+
+            if (activePromos.length === 0) return null
+
+            return (
+              <Swiper
+                key={activePromos.length}
+                modules={[Pagination, Autoplay]}
+                spaceBetween={24}
+                slidesPerView={1}
+                loop={activePromos.length > 1}
+                autoplay={activePromos.length > 1 ? { delay: 4000, disableOnInteraction: false } : false}
+                pagination={activePromos.length > 1 ? { clickable: true } : false}
+                className="promo-swiper !pb-12"
+              >
+                {activePromos.map((promo) => (
+                  <SwiperSlide key={promo.id} className="!h-auto flex">
+                    <div className="bg-zinc-950 text-white rounded-3xl relative overflow-hidden p-6 md:p-10 lg:p-12 border border-zinc-800 w-full h-full flex flex-col justify-center">
+                      <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+                      <div className="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+                      
+                      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+                        {/* Image Collage / Poster */}
+                        {promo.imageUrl && promo.imageUrl.trim() !== '' && promo.imageUrl.trim() !== '/' && (
+                          <div className="lg:col-span-5 w-full flex justify-center">
+                            <div className="relative w-full max-w-[280px] aspect-[4/5] sm:aspect-square lg:aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 group bg-zinc-900">
+                              <Image
+                                src={promo.imageUrl}
+                                alt={promo.title}
+                                fill
+                                sizes="(max-width: 768px) 100vw, 300px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                unoptimized
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Content Details */}
+                        <div className={promo.imageUrl ? "lg:col-span-7 flex flex-col items-start text-left" : "lg:col-span-12 flex flex-col items-center text-center mx-auto max-w-3xl"}>
+                          {promo.badge && (
+                            <span className="text-xs uppercase font-extrabold tracking-widest text-red-500 bg-red-500/10 border border-red-500/20 px-3.5 py-1 rounded-full font-sans mb-4 inline-block">
+                              {promo.badge}
+                            </span>
+                          )}
+                          
+                          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold mb-4 tracking-tight text-white leading-tight font-sporty">
+                            {promo.title ? promo.title.replace(/\s+([^\s]+)$/, '\u00A0$1') : ''}
+                          </h2>
+                          
+                          <p className="text-sm sm:text-base text-zinc-300 mb-6 leading-relaxed whitespace-pre-line font-sans font-normal">
+                            {promo.description}
+                          </p>
+                          
+                          <div className="flex flex-wrap gap-4">
+                            {promo.buttonText && promo.buttonUrl && (
+                              <a
+                                href={promo.buttonUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center px-6 py-3 text-sm bg-red-600 hover:bg-red-700 text-white font-extrabold rounded-xl shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
+                              >
+                                {promo.buttonText}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+            )
+          })()}
         </div>
       </section>
       

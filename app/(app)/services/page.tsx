@@ -2,38 +2,46 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { Paintbrush, Sparkles, Shield, Wrench, ChevronRight } from 'lucide-react'
+import { Paintbrush, Sparkles, Shield, ChevronRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function ServicesPage() {
   const services = [
     {
       icon: <Paintbrush className="h-7 w-7 text-red-600" />,
-      title: "Cat Spray Booth & Body Repair",
-      desc: "Pengecatan spray booth kedap debu dengan cat standar pabrik premium (Spies Hecker, Sikkens). Restorasi panel penyok, keropos, hingga accident repair berat.",
+      title: "Body Repaint & Repair",
+      desc: "Kembalikan tampilan kendaraan seperti baru dengan layanan body repair dan repaint profesional. Dikerjakan oleh teknisi berpengalaman menggunakan fasilitas spray booth modern dan material berkualitas premium.",
       img: "/service-paint.png",
-      details: ["Cat Spray Booth Standar Pabrik", "Restorasi Panel Penyok/Keropos", "Teknologi Spray Booth Kedap Debu", "Garansi Warna Presisi"]
-    },
-    {
-      icon: <Sparkles className="h-7 w-7 text-red-600" />,
-      title: "Nano Ceramic & Detailing",
-      desc: "3-step paint correction untuk menghilangkan baret halus (swirl mark), jamur bodi, ditutup dengan coating multi-layer 9H untuk proteksi permanen.",
-      img: "/service-detailing.png",
-      details: ["Multi-stage Paint Correction", "Nano Ceramic Coating 9H+", "Hydrophobic Effect (Daun Talas)", "Poles Kaca & Velg Menyeluruh"]
+      details: [
+        "Perbaikan Penyok & Kerusakan Bodi",
+        "Pengecatan Presisi dengan Spray Booth",
+        "Cat Premium Standar Pabrikan",
+        "Garansi Body Repair & Repaint 1 Tahun"
+      ]
     },
     {
       icon: <Shield className="h-7 w-7 text-red-600" />,
-      title: "Anti-Karat Sasis",
-      desc: "Pelapisan cairan aspal / bitumen elastis pada kolong sasis mobil untuk mencegah korosi logam dari cipratan air hujan, lumpur, dan zat asam.",
+      title: "Undercoating",
+      desc: "Lindungi bagian bawah kendaraan dari karat, korosi, kerikil, air, dan lumpur dengan lapisan undercoating berkualitas tinggi untuk perlindungan jangka panjang.",
       img: "/hero-car.png",
-      details: ["Pelapis Bitumen Anti Karat", "Proteksi Sasis Kolong Mobil", "Tahan Gesekan Kerikil", "Daya Tahan hingga 5 Tahun"]
+      details: [
+        "Perlindungan Maksimal dari Karat",
+        "Tahan Air, Lumpur & Kerikil",
+        "Meredam Suara dari Kolong Mobil",
+        "Daya Tahan Lapisan Lebih Lama"
+      ]
     },
     {
-      icon: <Wrench className="h-7 w-7 text-red-600" />,
-      title: "Custom Interior & Peredam",
-      desc: "Upholstery penggantian jok kulit premium serta pemasangan peredam kabin mobil untuk meredam kebisingan dari luar dan ban.",
-      img: "/service-interior.png",
-      details: ["Upholstery Jok Kulit Custom", "Pemasangan Peredam Suara Kabin", "Restorasi Plafon & Karpet Dasar", "Material Premium & Rapi"]
+      icon: <Sparkles className="h-7 w-7 text-red-600" />,
+      title: "Detailing & Coating",
+      desc: "Perawatan menyeluruh untuk mengembalikan kilap kendaraan sekaligus memberikan perlindungan ekstra pada permukaan cat agar tetap mengilap dan mudah dirawat.",
+      img: "/service-detailing.png",
+      details: [
+        "Kilap Maksimal & Warna Lebih Tajam",
+        "Perlindungan Cat dari UV & Kontaminasi",
+        "Efek Hidrofobik (Water Repellent)",
+        "Finishing Halus & Mudah Dibersihkan"
+      ]
     }
   ]
 
@@ -90,17 +98,19 @@ export default function ServicesPage() {
               {/* Text / Info Content */}
               <div className="w-full lg:w-1/2 flex flex-col justify-between">
                 <div>
-                  <div className="p-3 w-fit rounded-2xl bg-red-50 mb-6">
-                    {srv.icon}
+                  <div className="flex items-center gap-3.5 mb-5">
+                    <div className="p-2.5 rounded-2xl bg-red-50 flex-shrink-0">
+                      {srv.icon}
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 leading-tight">{srv.title}</h2>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-4">{srv.title}</h2>
                   <p className="text-gray-600 text-sm md:text-base leading-relaxed mb-6">{srv.desc}</p>
                   
                   {/* Detailed Points */}
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                     {srv.details.map((detail, dIdx) => (
                       <li key={dIdx} className="flex items-center gap-2 text-sm text-gray-700">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-600 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-emerald-500 flex-shrink-0" />
                         <span>{detail}</span>
                       </li>
                     ))}
@@ -109,19 +119,11 @@ export default function ServicesPage() {
 
                 <div className="flex gap-4 flex-wrap">
                   <Button
-                    disabled
-                    className="bg-red-600 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 opacity-60 cursor-not-allowed"
+                    onClick={() => window.dispatchEvent(new CustomEvent('open-chatbot'))}
+                    className="bg-red-600 hover:bg-red-700 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition"
                   >
-                    Pesan Sekarang <ChevronRight className="h-4 w-4" />
+                    Konsultasi & Tanya AI <ChevronRight className="h-4 w-4" />
                   </Button>
-                  <a
-                    href="https://wa.me/6285900472233"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2.5 font-bold rounded-xl transition"
-                  >
-                    Konsultasi WA
-                  </a>
                 </div>
               </div>
             </motion.div>

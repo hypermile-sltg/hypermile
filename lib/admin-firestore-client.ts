@@ -1,4 +1,4 @@
-type AdminCollection = 'products' | 'addons' | 'vouchers' | 'portfolio' | 'testimonials' | 'settings' | 'partners' | 'newsletter'
+type AdminCollection = 'products' | 'addons' | 'vouchers' | 'portfolio' | 'testimonials' | 'settings' | 'partners' | 'newsletter' | 'promos'
 type AdminAction = 'create' | 'update' | 'delete' | 'list'
 
 export async function adminFirestoreWrite({

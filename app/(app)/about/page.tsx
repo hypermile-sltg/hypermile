@@ -1,10 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Shield, Sparkles, Paintbrush, Wrench, CheckCircle2, Trophy, Clock, Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+
 
 export default function AboutPage() {
   const fadeIn = {
@@ -165,7 +164,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="relative group overflow-hidden rounded-3xl border-2 border-gray-900 shadow-lg aspect-video">
             <img
-              src="https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=800&auto=format&fit=crop&q=80"
+              src="/service-paint.png"
               alt="Fasilitas Spray Booth"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
@@ -209,15 +208,12 @@ export default function AboutPage() {
           <p className="text-white/90 text-sm md:text-base max-w-xl mx-auto mb-8 leading-relaxed">
             Konsultasikan kondisi kerusakan bodi atau kebutuhan proteksi ceramic coating mobil Anda secara gratis dengan tim admin ahli kami.
           </p>
-          <div className="flex justify-center gap-4 flex-wrap">
-            <Button asChild className="bg-black hover:bg-black/90 text-white px-8 py-3.5 font-bold rounded-xl shadow-lg transition">
-              <Link href="/products">Lihat Paket & Harga</Link>
-            </Button>
+          <div className="flex justify-center">
             <a 
               href="https://wa.me/6285900472233" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="bg-white hover:bg-gray-150 text-red-600 px-8 py-3.5 font-bold rounded-xl shadow-lg transition flex items-center gap-2"
+              className="bg-white hover:bg-gray-100 text-red-600 px-8 py-3.5 font-bold rounded-xl shadow-lg transition flex items-center gap-2"
             >
               Hubungi via WhatsApp
             </a>

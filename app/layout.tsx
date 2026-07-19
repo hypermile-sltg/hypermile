@@ -11,7 +11,7 @@ import SessionProvider from '@/components/SessionProvider'
 import { Toaster } from 'sonner'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
-import WhatsAppButton from '@/components/global/WhatsappButton'
+import Chatbot from '@/components/global/Chatbot'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
 
 
-            <WhatsAppButton />
+            <Chatbot />
           </SessionProvider>
         </ThemeProvider>
       </body>
